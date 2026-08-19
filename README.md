@@ -179,24 +179,6 @@ Set `DESIGNSCOUT_DATA` to change the location.
 
 ---
 
-## Deploy the Landing Page
-
-The landing page lives in `docs/`. Deploy to Cloudflare Pages:
-
-**Via Cloudflare dashboard:**
-1. Go to Workers and Pages in your Cloudflare dashboard
-2. Create a new Pages project
-3. Connect the GitHub repo `SpenceChakabva/designscout`
-4. Set build output directory to `docs`
-5. Leave build command empty (static site, no build step)
-6. Deploy
-
-**Via CLI:**
-```bash
-npm install -g wrangler
-wrangler pages deploy docs --project-name designscout
-```
-
 ## License
 
 MIT
