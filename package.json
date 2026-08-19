@@ -1,0 +1,33 @@
+{
+  "name": "designscout",
+  "version": "0.1.0",
+  "description": "Design research agent — browse, capture, analyze site designs and collaborate with Claude Code",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "designscout": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "cli": "tsx src/cli.ts",
+    "start": "node dist/index.js",
+    "lint:design": "npx impeccable detect docs/"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "better-sqlite3": "^11.8.2",
+    "commander": "^13.1.0",
+    "handlebars": "^4.7.8",
+    "playwright": "^1.52.0",
+    "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^22.12.0",
+    "@types/uuid": "^10.0.0",
+    "impeccable": "^3.5.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}

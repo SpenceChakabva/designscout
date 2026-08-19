@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "designscout": {
+      "command": "node",
+      "args": ["dist/index.js"],
+      "cwd": "/path/to/designscout",
+      "env": {}
+    }
+  }
+}

@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DesignScout</title>
+  <meta name="description" content="MCP server that captures websites, extracts design tokens, and audits for AI tells. Built for Claude Code." />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.7/gsap.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.7/ScrollTrigger.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" defer></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #B4E0D2; --dark: #0C1A16; --mid: #0F2820; --surface: #132A22;
+      --white: #FEFEFE; --green: #0D7C5F; --red: #D93B3B; --yellow: #F5C842; --teal: #7EECD8;
+      --ink: #0C1A16; --ink-2: #2D4A40; --ink-3: #4A6E62; --ink-4: #6A907F;
+      --shadow: 4px 4px 0 var(--ink); --pill: 999px; --card: 16px;
+    }
+    html { scroll-behavior: auto; }
+    body { background: var(--bg); font-family: 'DM Sans', system-ui, sans-serif; color: var(--ink); overflow-x: hidden; -webkit-font-smoothing: antialiased; }
+    ::selection { background: var(--green); color: var(--white); }
+
+    /* ── Type ── */
+    .bebas { font-family: 'Bebas Neue', cursive; letter-spacing: 1px; }
+    .mono { font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; }
+
+    /* ── Buttons ── */
+    .btn {
+      font-family: 'Bebas Neue', cursive; font-size: 1.05rem; letter-spacing: 2px;
+      padding: .7rem 1.8rem; border-radius: var(--pill);
+      border: 3px solid var(--ink); box-shadow: var(--shadow);
+      cursor: pointer; text-decoration: none; display: inline-block;
+      transition: box-shadow .12s, transform .12s;
+    }
+    .btn:hover { transform: translate(-2px,-2px); box-shadow: 7px 7px 0 var(--ink); }
+    .btn:active { transform: translate(2px,2px); box-shadow: 1px 1px 0 var(--ink); }
+    .btn--red { background: var(--red); color: var(--white); }
+    .btn--white { background: var(--white); color: var(--ink); }
+
+    /* ── Nav ── */
+    .nav { position: sticky; top: 1rem; z-index: 90; display: flex; justify-content: center; padding: 0 1.5rem; }
+    .nav__bar {
+      background: var(--white); border: 3px solid var(--ink); border-radius: var(--pill); box-shadow: var(--shadow);
+      padding: .5rem .7rem .5rem 1.4rem; display: inline-flex; align-items: center; gap: 1.6rem;
+    }
+    .nav__logo { font-family: 'Bebas Neue', cursive; font-size: 1.3rem; letter-spacing: 2px; color: var(--ink); text-decoration: none; display: flex; align-items: center; gap: .45rem; }
+    .nav__dot { width: 9px; height: 9px; background: var(--green); border-radius: 50%; }
+    .nav__links { display: flex; gap: 1.3rem; align-items: center; }
+    .nav__links a { font-weight: 600; font-size: .78rem; letter-spacing: .03em; color: var(--ink-2); text-decoration: none; transition: color .15s; }
+    .nav__links a:hover { color: var(--green); }
+    .nav__gh {
+      font-family: 'Bebas Neue', cursive; font-size: .9rem; letter-spacing: 2px;
+      padding: .35rem 1rem; background: var(--green); color: var(--white);
+      border: 3px solid var(--ink); border-radius: var(--pill); box-shadow: 3px 3px 0 var(--ink);
+      text-decoration: none; transition: transform .12s, box-shadow .12s;
+    }
+    .nav__gh:hover { transform: translate(-1px,-1px); box-shadow: 4px 4px 0 var(--ink); }
+
+    /* ── Hero ── */
+    .hero {
+      max-width: 980px; margin: 0 auto; padding: 8rem 2rem 6rem;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: center;
+    }
+    .hero__title { font-family: 'Bebas Neue', cursive; font-size: clamp(3.5rem, 9vw, 5.2rem); line-height: .88; margin-bottom: 1.3rem; }
+    .hero__title span { -webkit-text-stroke: 2.5px var(--ink); color: transparent; }
+    .hero__body { font-size: .95rem; line-height: 1.7; color: var(--ink-2); max-width: 400px; margin-bottom: 2rem; }
+    .hero__actions { display: flex; gap: .9rem; flex-wrap: wrap; }
+    .hero__visual { position: relative; }
+    #hero-gl { position: absolute; inset: -20px; z-index: 0; pointer-events: none; opacity: .6; }
+
+    /* ── Terminal ── */
+    .term {
+      position: relative; z-index: 1;
+      background: var(--dark); border: 3px solid var(--ink); border-radius: var(--card);
+      box-shadow: 6px 6px 0 var(--ink); overflow: hidden;
+    }
+    .term__bar { display: flex; align-items: center; gap: .4rem; padding: .5rem .9rem; border-bottom: 1px solid rgba(126,236,216,.06); }
+    .term__dot { width: 8px; height: 8px; border-radius: 50%; }
+    .term__dot--r { background: #ff5f57; } .term__dot--y { background: #febc2e; } .term__dot--g { background: #28c840; }
+    .term__label { font-size: .58rem; color: var(--ink-3); margin-left: .4rem; font-family: 'DM Sans', sans-serif; font-weight: 600; letter-spacing: .03em; }
+    .term__body { padding: .8rem 1rem; font-family: 'JetBrains Mono', monospace; font-size: .68rem; line-height: 1.55; color: #b8d8cc; }
+    .term__body .cm { color: #4a6e5f; } .term__body .g { color: var(--teal); } .term__body .r { color: #e8706a; }
+    .term__body .y { color: var(--yellow); } .term__body .b { font-weight: 700; color: #d8f0e6; }
+    .term__line { opacity: 0; }
+
+    /* ── Section utility ── */
+    .sec { max-width: 980px; margin: 0 auto; padding: 7rem 2rem; }
+    .sec--dark { background: var(--dark); }
+    .sec--mint { background: var(--bg); }
+    .sec__h { font-family: 'Bebas Neue', cursive; font-size: clamp(1.9rem, 4.5vw, 2.8rem); letter-spacing: 2px; line-height: 1; margin-bottom: 2.5rem; }
+    .sec--dark .sec__h { color: var(--white); }
+
+    /* ── Usage examples ── */
+    .usage { display: flex; flex-direction: column; gap: 3.5rem; }
+    .usage__item { display: grid; grid-template-columns: 280px 1fr; gap: 2rem; align-items: start; }
+    .usage__item:nth-child(even) { grid-template-columns: 1fr 280px; }
+    .usage__item:nth-child(even) .usage__text { order: 1; }
+    .usage__name { font-family: 'Bebas Neue', cursive; font-size: 1.3rem; letter-spacing: 1px; color: var(--white); margin-bottom: .5rem; }
+    .usage__desc { font-size: .82rem; line-height: 1.65; color: rgba(200,224,214,.5); }
+    .usage__term { width: 100%; }
+
+    /* ── Tools list ── */
+    .tools { display: grid; grid-template-columns: repeat(3, 1fr); gap: .8rem; }
+    .tool {
+      background: var(--white); border: 3px solid var(--ink); border-radius: var(--card);
+      box-shadow: var(--shadow); padding: 1.2rem 1.1rem;
+      transition: transform .15s, box-shadow .15s;
+    }
+    .tool:hover { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 var(--ink); }
+    .tool__name { font-family: 'JetBrains Mono', monospace; font-size: .72rem; font-weight: 700; color: var(--green); margin-bottom: .4rem; }
+    .tool__desc { font-size: .78rem; line-height: 1.5; color: var(--ink-3); }
+
+    /* ── Install ── */
+    .install__code {
+      background: var(--surface); border: 3px solid rgba(126,236,216,.08); border-radius: var(--card);
+      padding: 1.3rem 1.5rem; font-family: 'JetBrains Mono', monospace; font-size: .74rem;
+      line-height: 2; color: var(--teal); overflow-x: auto;
+    }
+    .install__code .cm { color: #4a6e5f; }
+    .install__note { font-size: .8rem; color: rgba(200,224,214,.4); margin-top: 1.3rem; line-height: 1.5; }
+
+    /* ── CTA ── */
+    .cta { background: var(--green); }
+    .cta__inner { max-width: 980px; margin: 0 auto; padding: 5rem 2rem; text-align: center; }
+    .cta__h { font-family: 'Bebas Neue', cursive; font-size: clamp(2.2rem, 7vw, 3.8rem); letter-spacing: 2px; color: var(--white); line-height: .95; margin-bottom: 1.1rem; }
+    .cta__p { font-size: .88rem; color: rgba(255,255,255,.6); max-width: 380px; margin: 0 auto 1.8rem; line-height: 1.55; }
+
+    /* ── Footer ── */
+    .ft { background: var(--dark); }
+    .ft__inner { max-width: 980px; margin: 0 auto; padding: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: .8rem; }
+    .ft__brand { font-family: 'Bebas Neue', cursive; font-size: 1.1rem; letter-spacing: 2px; color: var(--white); display: flex; align-items: center; gap: .4rem; }
+    .ft__brand .d { width: 7px; height: 7px; background: var(--green); border-radius: 50%; }
+    .ft__links { display: flex; gap: .9rem; }
+    .ft__links a { color: rgba(200,224,214,.25); font-size: .72rem; font-weight: 600; text-decoration: none; }
+    .ft__links a:hover { color: var(--white); }
+
+    @media (max-width: 768px) {
+      .nav__links { display: none; }
+      .hero { grid-template-columns: 1fr; padding: 5rem 1.5rem 3rem; }
+      .hero__visual { order: -1; }
+      .usage__item, .usage__item:nth-child(even) { grid-template-columns: 1fr; }
+      .usage__item:nth-child(even) .usage__text { order: 0; }
+      .tools { grid-template-columns: 1fr; }
+      .ft__inner { flex-direction: column; text-align: center; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+      .term__line { opacity: 1 !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="nav"><div class="nav__bar">
+    <a href="#" class="nav__logo"><span class="nav__dot"></span> DesignScout</a>
+    <div class="nav__links"><a href="#usage">Usage</a><a href="#tools">Tools</a><a href="#install">Install</a></div>
+    <a href="https://github.com/SpenceChakabva/designscout" target="_blank" rel="noopener" class="nav__gh">GitHub</a>
+  </div></nav>
+
+  <!-- ────────────────── HERO ────────────────── -->
+  <section class="hero">
+    <div>
+      <h1 class="hero__title">DESIGN<span>SCOUT</span></h1>
+      <p class="hero__body">MCP server for Claude Code. Captures websites with a headless browser, extracts colors, type, icons, and animations from the live DOM, then audits the output so it does not look like a model wrote it.</p>
+      <div class="hero__actions">
+        <a href="#install" class="btn btn--red">Get Started</a>
+        <a href="https://github.com/SpenceChakabva/designscout" target="_blank" rel="noopener" class="btn btn--white">Source Code</a>
+      </div>
+    </div>
+    <div class="hero__visual">
+      <canvas id="hero-gl"></canvas>
+      <div class="term">
+        <div class="term__bar"><span class="term__dot term__dot--r"></span><span class="term__dot term__dot--y"></span><span class="term__dot term__dot--g"></span><span class="term__label">claude code</span></div>
+        <div class="term__body">
+<div class="term__line"><span class="b">></span> Capture linear.app, show me 3 styles</div>
+<div class="term__line">&nbsp;</div>
+<div class="term__line"><span class="g">scout_capture</span> <span class="cm">https://linear.app</span></div>
+<div class="term__line"><span class="cm">  12 screenshots, 100% coverage</span></div>
+<div class="term__line"><span class="cm">  8 sections detected</span></div>
+<div class="term__line">&nbsp;</div>
+<div class="term__line"><span class="g">scout_store_patterns</span> <span class="cm">22 patterns</span></div>
+<div class="term__line"><span class="g">scout_styles</span></div>
+<div class="term__line">&nbsp;</div>
+<div class="term__line"><span class="y">1. Refined</span>  <span class="cm">light, spacious, soft radii</span></div>
+<div class="term__line"><span class="y">2. Bold</span>     <span class="cm">dark, saturated, tight</span></div>
+<div class="term__line"><span class="y">3. Expressive</span> <span class="cm">accent-led, rounded</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ────────────────── USAGE ────────────────── -->
+  <div class="sec--dark">
+    <div class="sec" id="usage">
+      <h2 class="sec__h">HOW PEOPLE USE IT</h2>
+      <div class="usage">
+
+        <div class="usage__item">
+          <div class="usage__text">
+            <div class="usage__name">COPY A DESIGN SYSTEM</div>
+            <div class="usage__desc">Capture a client's existing site. DesignScout extracts the actual computed fonts, colors, spacing, and animation libraries from the DOM. Generate a DESIGN.md that any coding tool can enforce.</div>
+          </div>
+          <div class="term usage__term">
+            <div class="term__bar"><span class="term__dot term__dot--r"></span><span class="term__dot term__dot--y"></span><span class="term__dot term__dot--g"></span></div>
+            <div class="term__body"><span class="b">></span> Capture example.com, generate
+   a DESIGN.md from it
+
+<span class="g">scout_capture</span> <span class="cm">example.com</span>
+<span class="cm">  fonts: DM Sans, Literata</span>
+<span class="cm">  icons: Phosphor Icons (24 SVGs)</span>
+<span class="cm">  anim: GSAP ScrollTrigger</span>
+
+<span class="g">scout_designmd</span>
+<span class="cm">  DESIGN.md written (42 tokens)</span></div>
+          </div>
+        </div>
+
+        <div class="usage__item">
+          <div class="usage__text">
+            <div class="usage__name">BLEND MULTIPLE REFERENCES</div>
+            <div class="usage__desc">Capture three sites you like. Compare their patterns, pick the strongest elements from each, and generate a merged token set that Claude Code uses to write the page.</div>
+          </div>
+          <div class="term usage__term">
+            <div class="term__bar"><span class="term__dot term__dot--r"></span><span class="term__dot term__dot--y"></span><span class="term__dot term__dot--g"></span></div>
+            <div class="term__body"><span class="b">></span> Capture stripe.com, linear.app,
+   and resend.com. Compare them,
+   build a page with the best of each.
+
+<span class="g">scout_capture</span> <span class="cm">3 sites captured</span>
+<span class="g">scout_compare</span>
+<span class="cm">  common: sans display, dark hero</span>
+<span class="cm">  unique: stripe's gradient depth,</span>
+<span class="cm">          linear's density</span>
+
+<span class="g">scout_tokens</span> <span class="cm">format: tailwind</span>
+<span class="cm">  merged token set written</span></div>
+          </div>
+        </div>
+
+        <div class="usage__item">
+          <div class="usage__text">
+            <div class="usage__name">AUDIT BEFORE SHIPPING</div>
+            <div class="usage__desc">Run the detector against generated code. 14 rules check for overused fonts, pure grays, gradient text, em-dash density, and filler phrases. Nothing leaves the repo looking like a model wrote it.</div>
+          </div>
+          <div class="term usage__term">
+            <div class="term__bar"><span class="term__dot term__dot--r"></span><span class="term__dot term__dot--y"></span><span class="term__dot term__dot--g"></span></div>
+            <div class="term__body"><span class="b">></span> Audit src/app/page.tsx
+
+<span class="g">scout_audit</span> <span class="cm">src/app/page.tsx</span>
+
+<span class="r">warn</span> <span class="b">overused-font</span>
+<span class="cm">  "Inter" is on the monoculture list</span>
+<span class="r">warn</span> <span class="b">ai-copy-phrase</span>
+<span class="cm">  "seamlessly" is LLM filler</span>
+
+<span class="g">clean</span> <span class="cm">2 fixed, 0 remaining</span></div>
+          </div>
+        </div>
+
+        <div class="usage__item">
+          <div class="usage__text">
+            <div class="usage__name">PICK A DIRECTION</div>
+            <div class="usage__desc">After capturing, generate three design directions from the same source patterns. Each has its own token set. Choose one, then Claude Code builds from those exact values.</div>
+          </div>
+          <div class="term usage__term">
+            <div class="term__bar"><span class="term__dot term__dot--r"></span><span class="term__dot term__dot--y"></span><span class="term__dot term__dot--g"></span></div>
+            <div class="term__body"><span class="b">></span> Show me 3 styles from vercel.com
+
+<span class="g">scout_styles</span>
+
+<span class="y">Refined</span>
+<span class="cm">  bg: #fafafa  radius: 8px  spacing: 1.2x</span>
+<span class="y">Bold</span>
+<span class="cm">  bg: #0a0a0a  radius: 4px  spacing: 0.85x</span>
+<span class="y">Expressive</span>
+<span class="cm">  bg: #fafafa  radius: 16px  accent-led</span>
+
+<span class="b">></span> Go with Bold.</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ────────────────── TOOLS ────────────────── -->
+  <div class="sec--mint" id="tools">
+    <div class="sec">
+      <h2 class="sec__h">TEN TOOLS</h2>
+      <div class="tools">
+        <div class="tool"><div class="tool__name">scout_capture</div><div class="tool__desc">Scrolls the full page, triggers lazy content, captures every section with 20% overlap. Reports coverage percentage.</div></div>
+        <div class="tool"><div class="tool__name">scout_analyze</div><div class="tool__desc">Returns screenshot paths for Claude Code to read with native vision. Includes the analysis schema.</div></div>
+        <div class="tool"><div class="tool__name">scout_store_patterns</div><div class="tool__desc">Saves color, type, layout, component, and mood patterns to the local SQLite database.</div></div>
+        <div class="tool"><div class="tool__name">scout_tokens</div><div class="tool__desc">Outputs JSON, CSS custom properties, or Tailwind config. Auto-tints grays, avoids overused fonts.</div></div>
+        <div class="tool"><div class="tool__name">scout_styles</div><div class="tool__desc">Three design directions from one capture: Refined, Bold, Expressive. Each with a complete token set.</div></div>
+        <div class="tool"><div class="tool__name">scout_audit</div><div class="tool__desc">14 deterministic rules for design slop, copy tells, and quality issues. No LLM, pure pattern matching.</div></div>
+        <div class="tool"><div class="tool__name">scout_designmd</div><div class="tool__desc">Generates an impeccable-compatible DESIGN.md from captured patterns. Readable by any AI coding tool.</div></div>
+        <div class="tool"><div class="tool__name">scout_search</div><div class="tool__desc">Queries the pattern database by keyword. Every capture builds the library.</div></div>
+        <div class="tool"><div class="tool__name">scout_compare</div><div class="tool__desc">Side-by-side analysis of multiple captured sites. Common patterns, unique elements, blended approach.</div></div>
+        <div class="tool"><div class="tool__name">scout_moodboard</div><div class="tool__desc">Renders an HTML mood board with screenshots, palettes, type analysis, and mood tags.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ────────────────── WHAT CAPTURE GRABS ────────────────── -->
+  <div class="sec--dark">
+    <div class="sec">
+      <h2 class="sec__h">WHAT CAPTURE EXTRACTS</h2>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2.5rem;">
+        <div>
+          <div style="font-family: 'Bebas Neue', cursive; font-size: 1.15rem; letter-spacing: 1px; color: var(--teal); margin-bottom: .6rem;">FROM THE DOM</div>
+          <p style="font-size: .8rem; line-height: 1.7; color: rgba(200,224,214,.5);">Computed colors on every visible element. Loaded fonts via the document.fonts API. Every unique font-size, weight, line-height, and letter-spacing in use. CSS custom properties on :root. Container max-widths, grid vs flex usage, and media query breakpoints. Sticky and fixed element counts.</p>
+        </div>
+        <div>
+          <div style="font-family: 'Bebas Neue', cursive; font-size: 1.15rem; letter-spacing: 1px; color: var(--teal); margin-bottom: .6rem;">ICONS AND ANIMATION</div>
+          <p style="font-size: .8rem; line-height: 1.7; color: rgba(200,224,214,.5);">Detects Font Awesome, Material Icons, Phosphor, Lucide, Remix, Tabler, Heroicons, Feather, and Bootstrap Icons. Counts inline SVGs with samples. Reads every @keyframes definition and which properties it animates. Detects GSAP, Framer Motion, Anime.js, Lenis, Locomotive, AOS, Three.js, Lottie, Motion One, and Barba.js. Flags scroll-triggered animations.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ────────────────── INSTALL ────────────────── -->
+  <div class="sec--mint" id="install">
+    <div class="sec">
+      <h2 class="sec__h">SETUP</h2>
+      <div class="install__code"><span class="cm"># clone</span>
+git clone https://github.com/SpenceChakabva/designscout.git
+cd designscout
+
+<span class="cm"># dependencies</span>
+npm install
+npx playwright install chromium
+
+<span class="cm"># build</span>
+npm run build
+
+<span class="cm"># register globally with Claude Code</span>
+claude mcp add designscout -s user -- node dist/index.js</div>
+      <p class="install__note" style="color: var(--ink-3);">Restart Claude Code after registering. Run /mcp to verify. Then ask it to capture a site.</p>
+    </div>
+  </div>
+
+  <!-- ────────────────── CTA ────────────────── -->
+  <div class="cta"><div class="cta__inner">
+    <h2 class="cta__h">START SCOUTING</h2>
+    <p class="cta__p">Open source. MIT licensed. Captures real design from real sites.</p>
+    <a href="https://github.com/SpenceChakabva/designscout" target="_blank" rel="noopener" class="btn btn--white">View on GitHub</a>
+  </div></div>
+
+  <!-- ────────────────── FOOTER ────────────────── -->
+  <footer class="ft"><div class="ft__inner">
+    <div class="ft__brand"><span class="d"></span> DesignScout</div>
+    <div class="ft__links">
+      <a href="https://github.com/SpenceChakabva/designscout" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/SpenceChakabva" target="_blank" rel="noopener">Spencer Chakabva</a>
+      <a href="LICENSE">MIT</a>
+    </div>
+  </div></footer>
+
+  <script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // ── Three.js wireframe ──
+    const canvas = document.getElementById('hero-gl');
+    if (canvas && !reduced) {
+      const r = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+      const box = canvas.parentElement.getBoundingClientRect();
+      r.setSize(box.width + 40, box.height + 40);
+      r.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      const s = new THREE.Scene();
+      const c = new THREE.PerspectiveCamera(50, (box.width + 40) / (box.height + 40), .1, 100);
+      c.position.z = 4.5;
+      const geo = new THREE.IcosahedronGeometry(1.6, 1);
+      const mat = new THREE.MeshBasicMaterial({ color: 0x0D7C5F, wireframe: true, transparent: true, opacity: .14 });
+      const m = new THREE.Mesh(geo, mat);
+      s.add(m);
+      (function tick() { requestAnimationFrame(tick); m.rotation.x += .0015; m.rotation.y += .002; r.render(s, c); })();
+      window.addEventListener('resize', () => {
+        const b = canvas.parentElement.getBoundingClientRect();
+        r.setSize(b.width + 40, b.height + 40);
+        c.aspect = (b.width + 40) / (b.height + 40);
+        c.updateProjectionMatrix();
+      });
+    }
+
+    // ── GSAP ──
+    if (typeof gsap !== 'undefined' && !reduced) {
+      gsap.registerPlugin(ScrollTrigger);
+
+      // Hero
+      gsap.from('.hero > div:first-child', { y: 35, opacity: 0, duration: .7, delay: .1, ease: 'power3.out' });
+      gsap.from('.hero__visual', { y: 25, opacity: 0, duration: .7, delay: .3, ease: 'power3.out' });
+
+      // Terminal lines
+      gsap.to('.hero .term__line', { opacity: 1, duration: .1, stagger: .1, delay: .8, ease: 'none' });
+
+      // Usage items
+      document.querySelectorAll('.usage__item').forEach((el, i) => {
+        gsap.from(el, {
+          scrollTrigger: { trigger: el, start: 'top 82%' },
+          y: 30, opacity: 0, duration: .6, delay: i * .04, ease: 'power3.out',
+        });
+      });
+
+      // Tools
+      gsap.from('.tool', {
+        scrollTrigger: { trigger: '.tools', start: 'top 80%' },
+        y: 20, opacity: 0, duration: .4, stagger: .05, ease: 'power2.out',
+      });
+
+      // Section headings
+      document.querySelectorAll('.sec__h').forEach(h => {
+        gsap.from(h, {
+          scrollTrigger: { trigger: h, start: 'top 82%' },
+          y: 25, opacity: 0, duration: .55, ease: 'power3.out',
+        });
+      });
+
+      // CTA
+      gsap.from('.cta__h', {
+        scrollTrigger: { trigger: '.cta', start: 'top 75%' },
+        scale: .94, opacity: 0, duration: .6, ease: 'power3.out',
+      });
+
+      // Install
+      gsap.from('.install__code', {
+        scrollTrigger: { trigger: '.install__code', start: 'top 85%' },
+        y: 20, opacity: 0, duration: .5, ease: 'power3.out',
+      });
+    } else {
+      document.querySelectorAll('.term__line').forEach(el => el.style.opacity = '1');
+    }
+  });
+  </script>
+</body>
+</html>

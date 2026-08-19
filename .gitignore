@@ -1,0 +1,14 @@
+node_modules/
+dist/
+data/
+*.db
+*.db-wal
+*.db-shm
+screenshots/
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+.env
+.env.local
