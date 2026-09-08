@@ -1,0 +1,23 @@
+{
+  "name": "DesignScout",
+  "short_name": "DesignScout",
+  "description": "An MCP server for Claude Code that captures live websites, extracts their design system, and audits generated code for AI design tells.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0C1A16",
+  "theme_color": "#0C1A16",
+  "icons": [
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "360x360",
+      "type": "image/png"
+    }
+  ]
+}

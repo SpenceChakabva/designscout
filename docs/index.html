@@ -3,14 +3,79 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DesignScout</title>
-  <meta name="description" content="An MCP server for Claude Code that captures real websites, extracts their design system, and audits generated code so it does not read as AI output." />
-  <meta name="theme-color" content="#0C1A16" />
-  <meta property="og:title" content="DesignScout" />
-  <meta property="og:description" content="Capture any website, extract its design system, and build from it with Claude Code." />
+
+  <!-- ── Primary meta ── -->
+  <title>DesignScout — a browser and design library for Claude Code</title>
+  <meta name="description" content="DesignScout is an MCP server for Claude Code that captures live websites, extracts their design system into local tokens, and audits generated code so it never ships looking AI-made." />
+  <meta name="keywords" content="DesignScout, MCP server, Claude Code, design tokens, design system extraction, AI design detection, Playwright, web design capture, component generation, style dictionary" />
+  <meta name="author" content="Spencer Chakabva" />
+  <meta name="robots" content="index, follow, max-image-preview:large" />
+  <meta name="color-scheme" content="light dark" />
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0C1A16" />
+  <link rel="canonical" href="https://designscout.spencerchakabva.dev/" />
+
+  <!-- ── Icons / PWA ── -->
+  <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="manifest" href="/site.webmanifest" />
+  <meta name="apple-mobile-web-app-title" content="DesignScout" />
+  <meta name="application-name" content="DesignScout" />
+
+  <!-- ── Open Graph ── -->
+  <meta property="og:site_name" content="DesignScout" />
   <meta property="og:type" content="website" />
-  <meta property="og:image" content="banner.svg" />
+  <meta property="og:url" content="https://designscout.spencerchakabva.dev/" />
+  <meta property="og:title" content="DesignScout — build from real design, not a model's guess" />
+  <meta property="og:description" content="An MCP server for Claude Code. Capture live websites, extract their design system into local tokens, and audit generated code so nothing ships looking machine-made." />
+  <meta property="og:image" content="https://designscout.spencerchakabva.dev/og-cover.png" />
+  <meta property="og:image:type" content="image/png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="DesignScout: build from real design, not a model's guess. An MCP server for Claude Code — 17 MCP tools, ~25 audit rules, 0 API keys, MIT licensed." />
+  <meta property="og:locale" content="en_US" />
+
+  <!-- ── Twitter / X ── -->
   <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="DesignScout — build from real design, not a model's guess" />
+  <meta name="twitter:description" content="An MCP server for Claude Code. Capture live websites, extract their design system into local tokens, and audit generated code so nothing ships looking machine-made." />
+  <meta name="twitter:image" content="https://designscout.spencerchakabva.dev/og-cover.png" />
+  <meta name="twitter:image:alt" content="DesignScout: build from real design, not a model's guess. An MCP server for Claude Code — 17 MCP tools, ~25 audit rules, 0 API keys, MIT licensed." />
+
+  <!-- ── Structured data ── -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "SoftwareApplication",
+        "name": "DesignScout",
+        "url": "https://designscout.spencerchakabva.dev/",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "macOS, Linux, Windows",
+        "description": "An MCP server for Claude Code that captures live websites, extracts their design system into local tokens, and audits generated code for AI design tells.",
+        "license": "https://github.com/SpenceChakabva/designscout/blob/main/LICENSE",
+        "softwareVersion": "0.2",
+        "author": {
+          "@type": "Person",
+          "name": "Spencer Chakabva",
+          "url": "https://github.com/SpenceChakabva"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "codeRepository": "https://github.com/SpenceChakabva/designscout"
+      },
+      {
+        "@type": "WebSite",
+        "name": "DesignScout",
+        "url": "https://designscout.spencerchakabva.dev/"
+      }
+    ]
+  }
+  </script>
   <script>
     document.documentElement.classList.add('js');
     try {
