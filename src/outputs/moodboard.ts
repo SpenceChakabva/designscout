@@ -108,17 +108,17 @@ function renderMoodBoardHtml(board: MoodBoard): string {
 
           <div class="analysis-card">
             <h3>Typography</h3>
-            <p><strong>Headings:</strong> ${typo?.headingStyle || '—'} / ${typo?.headingWeight || '—'}</p>
-            <p><strong>Body:</strong> ${typo?.bodyStyle || '—'}</p>
-            <p><strong>Scale:</strong> ${typo?.estimatedScaleRatio || '—'}</p>
+            <p><strong>Headings:</strong> ${typo?.headingStyle || 'n/a'} / ${typo?.headingWeight || 'n/a'}</p>
+            <p><strong>Body:</strong> ${typo?.bodyStyle || 'n/a'}</p>
+            <p><strong>Scale:</strong> ${typo?.estimatedScaleRatio || 'n/a'}</p>
             <p class="notable">${typo?.notable || ''}</p>
           </div>
 
           <div class="analysis-card">
             <h3>Layout</h3>
-            <p><strong>Structure:</strong> ${layout?.structure || '—'}</p>
-            <p><strong>Columns:</strong> ${layout?.columns || '—'}</p>
-            <p><strong>Spacing:</strong> ${layout?.spacingDensity || '—'}</p>
+            <p><strong>Structure:</strong> ${layout?.structure || 'n/a'}</p>
+            <p><strong>Columns:</strong> ${layout?.columns || 'n/a'}</p>
+            <p><strong>Spacing:</strong> ${layout?.spacingDensity || 'n/a'}</p>
           </div>
 
           <div class="analysis-card">
@@ -135,183 +135,80 @@ function renderMoodBoardHtml(board: MoodBoard): string {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>${board.title} — DesignScout Mood Board</title>
+  <title>${board.title} · DesignScout Mood Board</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; }
 
+    :root {
+      --bg: #12110f;
+      --surface: #1a1815;
+      --line: #322e28;
+      --ink: #ece7de;
+      --muted: #9a9387;
+      --accent: #e8613c;
+    }
+
     body {
-      font-family: 'Inter', system-ui, sans-serif;
-      background: #0a0a0a;
-      color: #e5e5e5;
-      padding: 2rem;
+      font-family: 'DM Sans', 'Satoshi', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      padding: 2.5rem;
       line-height: 1.6;
     }
 
     .board-header {
-      text-align: center;
-      padding: 3rem 1rem;
-      border-bottom: 1px solid #222;
+      padding: 2rem 0 2.5rem;
+      border-bottom: 2px solid var(--line);
       margin-bottom: 3rem;
     }
 
     .board-header h1 {
-      font-size: 2.5rem;
-      font-weight: 700;
-      letter-spacing: -0.02em;
+      font-family: 'Cabinet Grotesk', 'Hanken Grotesk', var(--font-heading, sans-serif);
+      font-size: clamp(2rem, 5vw, 3rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
       margin-bottom: 0.5rem;
     }
 
-    .board-header .brief {
-      color: #999;
-      max-width: 600px;
-      margin: 0 auto;
-    }
-
-    .board-header .meta {
-      font-size: 0.75rem;
-      color: #555;
-      margin-top: 1rem;
-    }
+    .board-header .brief { color: var(--muted); max-width: 55ch; }
+    .board-header .meta { font-size: 0.75rem; color: #6a655c; margin-top: 1rem; text-transform: uppercase; letter-spacing: 0.08em; }
 
     .entry {
-      margin-bottom: 4rem;
-      padding-bottom: 4rem;
-      border-bottom: 1px solid #1a1a1a;
+      margin-bottom: 3.5rem;
+      padding: 1.75rem;
+      border: 2px solid var(--line);
+      background: var(--surface);
     }
 
-    .entry-header {
-      margin-bottom: 1.5rem;
-    }
+    .entry-header { margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; flex-wrap: wrap; }
+    .entry-header h2 { font-family: 'Cabinet Grotesk', 'Hanken Grotesk', sans-serif; font-size: 1.4rem; font-weight: 700; }
+    .entry-header a { color: var(--muted); font-size: 0.85rem; text-decoration: none; }
+    .entry-header a:hover { color: var(--accent); }
 
-    .entry-header h2 {
-      font-size: 1.5rem;
-      font-weight: 600;
-    }
+    .screenshots-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0.75rem; margin-bottom: 1.75rem; }
+    .screenshot { width: 100%; border: 2px solid var(--line); object-fit: cover; object-position: top; max-height: 380px; display: block; }
+    .placeholder { display: flex; align-items: center; justify-content: center; height: 180px; background: var(--bg); color: #4a463f; border: 2px dashed var(--line); }
 
-    .entry-header a {
-      color: #666;
-      font-size: 0.875rem;
-      text-decoration: none;
-    }
-    .entry-header a:hover { color: #999; }
+    .analysis-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 0.75rem; }
+    .analysis-card { background: var(--bg); border: 2px solid var(--line); padding: 1.1rem; }
+    .analysis-card h3 { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: #6a655c; margin-bottom: 0.75rem; }
+    .analysis-card p { font-size: 0.85rem; margin-bottom: 0.35rem; }
 
-    .screenshots-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 1rem;
-      margin-bottom: 2rem;
-    }
+    .swatches { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+    .swatch { width: 100%; min-width: 46px; flex: 1 1 46px; height: 46px; border: 2px solid var(--line); display: flex; flex-direction: column; justify-content: flex-end; padding: 3px; position: relative; }
+    .swatch-label { display: none; }
+    .swatch:hover .swatch-label { display: block; position: absolute; top: -1.4rem; left: 0; font-size: 0.6rem; color: var(--muted); white-space: nowrap; }
+    .swatch-hex { font-size: 0.5rem; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.9); font-family: ui-monospace, monospace; }
 
-    .screenshot {
-      width: 100%;
-      border-radius: 8px;
-      border: 1px solid #222;
-      object-fit: cover;
-      max-height: 400px;
-    }
-
-    .placeholder {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 200px;
-      background: #111;
-      color: #444;
-      border-radius: 8px;
-    }
-
-    .analysis-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 1rem;
-    }
-
-    .analysis-card {
-      background: #111;
-      border: 1px solid #1a1a1a;
-      border-radius: 12px;
-      padding: 1.25rem;
-    }
-
-    .analysis-card h3 {
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #555;
-      margin-bottom: 0.75rem;
-    }
-
-    .analysis-card p {
-      font-size: 0.875rem;
-      margin-bottom: 0.35rem;
-    }
-
-    .swatches {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-    }
-
-    .swatch {
-      width: 52px;
-      height: 52px;
-      border-radius: 8px;
-      border: 1px solid #333;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-end;
-      padding: 2px;
-      position: relative;
-      cursor: pointer;
-    }
-
-    .swatch-label {
-      display: none;
-    }
-
-    .swatch:hover .swatch-label {
-      display: block;
-      position: absolute;
-      top: -1.5rem;
-      font-size: 0.6rem;
-      color: #aaa;
-      white-space: nowrap;
-    }
-
-    .swatch-hex {
-      font-size: 0.55rem;
-      color: #fff;
-      text-shadow: 0 1px 2px rgba(0,0,0,0.8);
-    }
-
-    .mood-tag {
-      display: inline-block;
-      background: #1a1a2e;
-      color: #7c8cf8;
-      padding: 0.25rem 0.75rem;
-      border-radius: 999px;
-      font-size: 0.875rem;
-      font-weight: 500;
-    }
-
-    .signature {
-      color: #888;
-      font-style: italic;
-      margin-top: 0.5rem;
-    }
-
-    .notable {
-      color: #888;
-      font-style: italic;
-    }
+    .mood-tag { display: inline-block; background: var(--accent); color: #12110f; padding: 0.2rem 0.7rem; font-size: 0.8rem; font-weight: 700; text-transform: lowercase; }
+    .signature, .notable { color: var(--muted); font-style: italic; margin-top: 0.5rem; }
   </style>
 </head>
 <body>
   <header class="board-header">
     <h1>${board.title}</h1>
     ${board.brief ? `<p class="brief">${board.brief}</p>` : ''}
-    <p class="meta">Generated by DesignScout · ${board.generatedAt}</p>
+    <p class="meta">DesignScout · ${board.generatedAt}</p>
   </header>
 
   <main>

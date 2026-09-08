@@ -25,33 +25,65 @@ URL → [Browser Engine] → Screenshots + DOM data
 
 | Tool | Description |
 |------|-------------|
-| `scout_capture` | Visit URL, auto-scroll, capture viewport screenshots |
-| `scout_analyze` | Analyze captured screenshots via Claude Vision |
+| `scout_capture` | Visit URL, auto-scroll, capture viewport screenshots. Responsive multi-viewport, selector-scoped capture, layout-breakage detection, banner dismissal, DOM style extraction, raw HTML persisted for later audit |
+| `scout_analyze` | Return screenshot paths + schema; Claude Code does the vision pass |
+| `scout_store_patterns` | Persist Claude Code's structured analysis |
 | `scout_search` | Query inspiration DB for patterns matching a brief |
-| `scout_tokens` | Generate design token JSON from analyzed patterns |
+| `scout_tokens` | Generate tokens: json / css / tailwind / style-dictionary / w3c / figma |
+| `scout_styles` | Three token sets: Refined, Bold, Expressive |
+| `scout_codegen` | Generate a React/HTML component from a token set, pre-checked against the audit rules |
 | `scout_moodboard` | Produce an HTML mood board artifact |
-| `scout_codegen` | Generate React/HTML components from inspiration |
 | `scout_compare` | Side-by-side comparison of multiple site designs |
+| `scout_audit` | Deterministic anti-pattern detection on a file, text, or captured site |
+| `scout_a11y` | Deterministic accessibility scan with a 0-100 score |
+| `scout_inventory` | Component inventory from the live DOM |
+| `scout_designmd` | impeccable-compatible DESIGN.md |
+| `scout_crawl` | BFS crawl of internal pages with per-page signals + dedupe |
+| `scout_consistency` | Cross-page design consistency report (HTML + JSON) |
+| `scout_list` / `scout_delete` | Site & crawl management |
 
 ## CLI Commands (fallback)
 
+Every tool has a matching subcommand. Highlights:
+
 ```
-designscout capture <url> [--viewport 1440x900] [--scroll-delay 500]
-designscout analyze [--site <url>]
-designscout search <query>
-designscout tokens [--site <url>] [--format css|json|tailwind]
-designscout moodboard [--sites <url1,url2>] [--output moodboard.html]
-designscout codegen [--component hero|nav|card|footer] [--framework react|html]
+designscout capture <url> [--responsive] [--viewports mobile,desktop] [--selector "nav"]
+designscout analyze [--site-id <id> | --url <url>]
+designscout store-patterns <siteId> <file.json|jsonString>
+designscout tokens [--site-id <id>] [--format json|css|tailwind|style-dictionary|w3c|figma]
+designscout styles [--site-id <id>] [--brief <text>]
+designscout codegen <hero|navbar|card|footer|features|testimonials|cta|pricing> [--framework react|html] [-o path]
+designscout audit [--file <path> | --text <s> | --site-id <id> | --url <url>] [--check <cat|ruleId>]
+designscout a11y [--site-id <id> | --url <url>]
+designscout inventory [--site-id <id> | --url <url>]
+designscout crawl <url> [--max-pages 20] [--max-depth 2] [--include <re>] [--exclude <re>]
+designscout consistency [--crawl-id <id>]
+designscout moodboard [--site-ids <id1,id2>] [--title <t>]
+designscout list [--kind sites|crawls]
+designscout delete <siteId>
+designscout serve
 ```
 
 ## Tech Stack
-- **Runtime**: Node.js / TypeScript
-- **MCP SDK**: @modelcontextprotocol/sdk
+- **Runtime**: Node.js 20+ / TypeScript (ESM)
+- **MCP SDK**: @modelcontextprotocol/sdk (+ zod schemas)
 - **Browser**: Playwright (Chromium headless)
-- **Vision**: Anthropic Claude API (claude-sonnet-4-6)
-- **Storage**: better-sqlite3
+- **Vision**: none — Claude Code reads the screenshot files itself
+- **Storage**: better-sqlite3 (migrated schema, `user_version` pragma)
 - **CLI**: commander.js
-- **Output**: Handlebars templates for mood boards
+- **Tests**: `node:test` via tsx (`npm test`)
+- **Output**: string-built HTML for mood boards & consistency reports
+
+## Browser layer (`src/browser/`)
+- `session.ts` — `withBrowser`, context creation (with a `__name` shim so
+  esbuild/tsx-transformed extractor functions survive `page.evaluate`),
+  `gotoWithRetry` (exponential backoff), `dismissOverlays`
+- `capture.ts` — per-viewport orchestration: lazy-load scroll, DOM data grab,
+  overlapping frame capture, full-page + selector modes
+- `extract.ts` — serialized in-page scripts: style extraction, layout-issue
+  detection, component inventory, accessibility scan
+- `crawl.ts` — BFS link discovery, structural fingerprint dedupe, per-page signals
+- `inspect.ts` — load once, run an arbitrary in-page evaluator (inventory / a11y)
 
 ## Data Model (SQLite)
 
@@ -93,7 +125,31 @@ CREATE TABLE tokens (
   id TEXT PRIMARY KEY,
   site_id TEXT REFERENCES sites(id),
   token_set TEXT NOT NULL, -- JSON: full token set
-  format TEXT DEFAULT 'json', -- json, css, tailwind
+  format TEXT DEFAULT 'json',
+  generated_at TEXT DEFAULT (datetime('now'))
+);
+
+-- schema v1: screenshots gain device_type, viewport_label
+
+-- schema v2: crawl support
+CREATE TABLE crawls (
+  id TEXT PRIMARY KEY,
+  start_url TEXT NOT NULL,
+  data TEXT NOT NULL,          -- JSON: full CrawlResult
+  generated_at TEXT DEFAULT (datetime('now'))
+);
+CREATE TABLE pages (
+  id TEXT PRIMARY KEY,
+  crawl_id TEXT REFERENCES crawls(id) ON DELETE CASCADE,
+  site_id TEXT REFERENCES sites(id) ON DELETE SET NULL,
+  url TEXT NOT NULL, path TEXT, depth INTEGER,
+  title TEXT, fingerprint TEXT, duplicate_of TEXT
+);
+CREATE TABLE audits (
+  id TEXT PRIMARY KEY,
+  site_id TEXT REFERENCES sites(id) ON DELETE CASCADE,
+  target TEXT,
+  data TEXT NOT NULL,          -- JSON: summary + findings (or a11y report)
   generated_at TEXT DEFAULT (datetime('now'))
 );
 ```
@@ -151,21 +207,31 @@ designscout/
 │   │   ├── server.ts       # MCP server setup + tool registration
 │   │   └── tools.ts        # Tool handler implementations
 │   ├── browser/
-│   │   └── capture.ts      # Playwright scroll + screenshot logic
+│   │   ├── session.ts      # browser lifecycle, retry nav, overlay dismissal
+│   │   ├── capture.ts      # scroll + screenshot orchestration
+│   │   ├── extract.ts      # in-page extractors (styles, layout, inventory, a11y)
+│   │   ├── crawl.ts        # BFS multi-page crawl + dedupe
+│   │   └── inspect.ts      # load-once + run an in-page evaluator
 │   ├── analyzer/
-│   │   └── vision.ts       # Claude Vision API analysis
+│   │   └── vision.ts       # analysis schema + pattern extraction
+│   ├── audit/
+│   │   ├── rules.ts        # ~25 deterministic anti-pattern rules
+│   │   └── a11y.ts         # accessibility report + scoring
 │   ├── store/
-│   │   ├── db.ts           # SQLite setup + migrations
-│   │   └── queries.ts      # Query helpers
+│   │   ├── db.ts           # SQLite setup + versioned migrations
+│   │   └── queries.ts      # query helpers
 │   ├── outputs/
-│   │   ├── tokens.ts       # Design token generators
-│   │   ├── moodboard.ts    # Mood board HTML generator
-│   │   └── codegen.ts      # React/HTML code generator
-│   └── shared/
-│       ├── types.ts        # Shared TypeScript types
-│       └── config.ts       # Configuration + defaults
-├── templates/
-│   └── moodboard.hbs       # Mood board HTML template
-└── data/
-    └── designscout.db      # SQLite database (created at runtime)
+│   │   ├── tokens.ts       # token generators (6 formats)
+│   │   ├── moodboard.ts    # mood board HTML
+│   │   ├── codegen.ts      # React/HTML component generator
+│   │   ├── consistency.ts  # cross-page consistency report
+│   │   └── designmd.ts     # DESIGN.md generator
+│   ├── shared/
+│   │   ├── types.ts        # shared types
+│   │   └── config.ts       # config, viewport presets, env knobs
+│   └── **/*.test.ts        # node:test suites
+└── ~/.designscout/
+    ├── designscout.db      # SQLite database (created at runtime)
+    ├── screenshots/        # per-site + per-crawl images, page.html
+    └── outputs/            # mood boards, consistency reports
 ```

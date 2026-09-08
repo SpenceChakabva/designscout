@@ -445,3 +445,310 @@ export async function extractFromPage(): Promise<DomExtraction> {
     stylesheetUrls,
   };
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+// LAYOUT ISSUE DETECTION  (run per viewport)
+// ════════════════════════════════════════════════════════════════════════════
+
+export interface RawLayoutIssue {
+  type:
+    | 'horizontal-scroll'
+    | 'element-overflow'
+    | 'tiny-tap-target'
+    | 'text-too-small'
+    | 'fixed-overlap'
+    | 'content-clipped';
+  detail: string;
+  selector?: string;
+}
+
+/** Detects responsive breakage at the current viewport width. */
+export function detectLayoutIssues(): RawLayoutIssue[] {
+  const issues: RawLayoutIssue[] = [];
+  const vw = document.documentElement.clientWidth;
+  const isTouchWidth = vw <= 900;
+
+  const shortSelector = (el: Element): string => {
+    const tag = el.tagName.toLowerCase();
+    const id = (el as HTMLElement).id;
+    if (id) return `${tag}#${id}`;
+    const cls = (el.className && typeof el.className === 'string')
+      ? '.' + el.className.trim().split(/\s+/).slice(0, 2).join('.')
+      : '';
+    return tag + cls;
+  };
+
+  // ── Horizontal scroll ──
+  const docWidth = document.documentElement.scrollWidth;
+  if (docWidth > vw + 2) {
+    issues.push({
+      type: 'horizontal-scroll',
+      detail: `Document is ${docWidth}px wide in a ${vw}px viewport — the page scrolls sideways.`,
+    });
+  }
+
+  const all = Array.from(document.querySelectorAll('body *')) as HTMLElement[];
+  const step = Math.max(1, Math.floor(all.length / 1200));
+  let overflowCount = 0;
+  let tinyTapCount = 0;
+  let smallTextCount = 0;
+  const overflowSamples: string[] = [];
+  const tapSamples: string[] = [];
+
+  for (let i = 0; i < all.length; i += step) {
+    const el = all[i];
+    const rect = el.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) continue;
+    const style = getComputedStyle(el);
+    if (style.position === 'fixed') continue;
+
+    // Element pushes past the right edge
+    if (rect.right > vw + 4 && rect.left >= 0 && rect.width < vw * 1.5) {
+      overflowCount++;
+      if (overflowSamples.length < 5) overflowSamples.push(shortSelector(el));
+    }
+
+    // Tap targets on narrow viewports
+    if (isTouchWidth && (el.tagName === 'A' || el.tagName === 'BUTTON' || el.getAttribute('role') === 'button')) {
+      if (el.textContent && el.textContent.trim() && (rect.height < 32 || rect.width < 32)) {
+        tinyTapCount++;
+        if (tapSamples.length < 5) tapSamples.push(shortSelector(el));
+      }
+    }
+
+    // Body text too small on mobile
+    if (isTouchWidth) {
+      const fs = parseFloat(style.fontSize);
+      const txt = el.childNodes.length && Array.from(el.childNodes).some(n => n.nodeType === 3 && (n.textContent || '').trim().length > 20);
+      if (txt && fs > 0 && fs < 13) smallTextCount++;
+    }
+  }
+
+  if (overflowCount > 0) {
+    issues.push({
+      type: 'element-overflow',
+      detail: `${overflowCount} element(s) extend past the right edge of the viewport.`,
+      selector: overflowSamples.join(', '),
+    });
+  }
+  if (tinyTapCount > 0) {
+    issues.push({
+      type: 'tiny-tap-target',
+      detail: `${tinyTapCount} interactive element(s) are under 32px — below the 44px touch guideline.`,
+      selector: tapSamples.join(', '),
+    });
+  }
+  if (smallTextCount > 3) {
+    issues.push({
+      type: 'text-too-small',
+      detail: `${smallTextCount} text block(s) render below 13px on a narrow viewport.`,
+    });
+  }
+
+  // Fixed elements that cover a large share of a small viewport
+  if (isTouchWidth) {
+    for (const el of Array.from(document.querySelectorAll('body *')) as HTMLElement[]) {
+      const style = getComputedStyle(el);
+      if (style.position !== 'fixed') continue;
+      const rect = el.getBoundingClientRect();
+      const coverage = (rect.width * rect.height) / (vw * document.documentElement.clientHeight);
+      if (coverage > 0.4 && rect.height > 60) {
+        issues.push({
+          type: 'fixed-overlap',
+          detail: `A fixed element covers ~${Math.round(coverage * 100)}% of the mobile viewport.`,
+          selector: shortSelector(el),
+        });
+        break;
+      }
+    }
+  }
+
+  return issues;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// COMPONENT INVENTORY
+// ════════════════════════════════════════════════════════════════════════════
+
+export interface RawInventoryItem {
+  type: string;
+  variant: string;
+  count: number;
+  example: string;
+  styles: Record<string, string>;
+}
+
+/** Walks the DOM and groups interactive/structural components by visual signature. */
+export function extractInventory(): RawInventoryItem[] {
+  const groups = new Map<string, { item: RawInventoryItem; sig: string }>();
+
+  const pick = (style: CSSStyleDeclaration, keys: string[]): Record<string, string> => {
+    const out: Record<string, string> = {};
+    for (const k of keys) out[k] = style.getPropertyValue(k);
+    return out;
+  };
+
+  const classify = (el: HTMLElement): { type: string; variant: string } | null => {
+    const tag = el.tagName.toLowerCase();
+    const role = el.getAttribute('role');
+    const cls = (typeof el.className === 'string' ? el.className : '').toLowerCase();
+    const style = getComputedStyle(el);
+
+    if (tag === 'button' || role === 'button' || (tag === 'a' && /\bbtn\b|button/.test(cls))) {
+      const bg = style.backgroundColor;
+      const hasBg = bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent';
+      const hasBorder = parseFloat(style.borderWidth) > 0;
+      const variant = hasBg ? 'filled' : hasBorder ? 'outline' : 'ghost';
+      return { type: 'button', variant };
+    }
+    if (tag === 'input' || tag === 'textarea' || tag === 'select') {
+      return { type: 'input', variant: tag === 'input' ? (el.getAttribute('type') || 'text') : tag };
+    }
+    if (/\bcard\b/.test(cls) || (tag === 'article' && parseFloat(style.borderRadius) > 0)) {
+      const elevated = style.boxShadow !== 'none';
+      return { type: 'card', variant: elevated ? 'elevated' : 'flat' };
+    }
+    if (/\bbadge\b|\bchip\b|\btag\b|\bpill\b/.test(cls)) {
+      return { type: 'badge', variant: parseFloat(style.borderRadius) > 12 ? 'pill' : 'square' };
+    }
+    if (tag === 'nav' || role === 'navigation') {
+      return { type: 'nav', variant: style.position === 'sticky' || style.position === 'fixed' ? 'sticky' : 'static' };
+    }
+    return null;
+  };
+
+  const els = Array.from(document.querySelectorAll('body *')) as HTMLElement[];
+  for (const el of els) {
+    const rect = el.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) continue;
+    const c = classify(el);
+    if (!c) continue;
+
+    const style = getComputedStyle(el);
+    const styles = pick(style, [
+      'background-color', 'color', 'border-radius', 'border-width', 'border-color',
+      'padding', 'font-size', 'font-weight', 'box-shadow', 'text-transform', 'letter-spacing',
+    ]);
+    const sig = `${c.type}|${c.variant}|${styles['border-radius']}|${styles['background-color']}|${styles['font-size']}`;
+    const key = `${c.type}:${c.variant}:${sig}`;
+
+    const existing = groups.get(key);
+    if (existing) {
+      existing.item.count++;
+    } else {
+      groups.set(key, {
+        sig,
+        item: {
+          type: c.type,
+          variant: c.variant,
+          count: 1,
+          example: el.outerHTML.slice(0, 240),
+          styles,
+        },
+      });
+    }
+  }
+
+  return Array.from(groups.values())
+    .map(g => g.item)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 40);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// ACCESSIBILITY EXTRACTION
+// ════════════════════════════════════════════════════════════════════════════
+
+export interface RawA11y {
+  issues: { rule: string; severity: 'error' | 'warning' | 'advisory'; detail: string; count: number; selectorSample: string[] }[];
+  headingOutline: { level: number; text: string }[];
+  landmarks: string[];
+}
+
+export function extractAccessibility(): RawA11y {
+  const issues: RawA11y['issues'] = [];
+  const add = (rule: string, severity: 'error' | 'warning' | 'advisory', detail: string, count: number, samples: string[] = []) => {
+    if (count > 0) issues.push({ rule, severity, detail, count, selectorSample: samples.slice(0, 5) });
+  };
+
+  // Images missing alt
+  const imgs = Array.from(document.querySelectorAll('img'));
+  const noAlt = imgs.filter(i => !i.hasAttribute('alt'));
+  add('img-alt', 'error', 'Images without an alt attribute.', noAlt.length,
+    noAlt.map(i => i.getAttribute('src')?.slice(0, 50) || 'img'));
+
+  // Buttons / links with no accessible name
+  const namelessBtns = Array.from(document.querySelectorAll('button, [role="button"], a')).filter(el => {
+    const text = (el.textContent || '').trim();
+    const aria = el.getAttribute('aria-label') || el.getAttribute('title');
+    const hasImg = el.querySelector('img[alt]:not([alt=""])') || el.querySelector('svg title');
+    return !text && !aria && !hasImg;
+  });
+  add('control-name', 'error', 'Interactive controls with no accessible name (no text, aria-label, or title).', namelessBtns.length);
+
+  // Inputs without labels
+  const unlabeled = Array.from(document.querySelectorAll('input:not([type="hidden"]):not([type="submit"]):not([type="button"]), textarea, select')).filter(el => {
+    const id = (el as HTMLElement).id;
+    const hasFor = id && document.querySelector(`label[for="${CSS.escape(id)}"]`);
+    const wrapped = el.closest('label');
+    const aria = el.getAttribute('aria-label') || el.getAttribute('aria-labelledby');
+    return !hasFor && !wrapped && !aria;
+  });
+  add('input-label', 'error', 'Form fields with no associated label.', unlabeled.length);
+
+  // Heading order
+  const headings = Array.from(document.querySelectorAll('h1, h2, h3, h4, h5, h6'));
+  const outline = headings.slice(0, 60).map(h => ({
+    level: parseInt(h.tagName[1], 10),
+    text: (h.textContent || '').trim().slice(0, 80),
+  }));
+  const h1Count = headings.filter(h => h.tagName === 'H1').length;
+  if (h1Count === 0) add('h1-missing', 'warning', 'Page has no <h1>.', 1);
+  if (h1Count > 1) add('h1-multiple', 'advisory', `Page has ${h1Count} <h1> elements.`, 1);
+  let skips = 0;
+  for (let i = 1; i < outline.length; i++) {
+    if (outline[i].level - outline[i - 1].level > 1) skips++;
+  }
+  add('heading-skip', 'warning', 'Heading levels skip (e.g. h2 followed by h4).', skips);
+
+  // Landmarks
+  const landmarks: string[] = [];
+  if (document.querySelector('header, [role="banner"]')) landmarks.push('banner');
+  if (document.querySelector('nav, [role="navigation"]')) landmarks.push('navigation');
+  if (document.querySelector('main, [role="main"]')) landmarks.push('main');
+  if (document.querySelector('footer, [role="contentinfo"]')) landmarks.push('contentinfo');
+  if (!landmarks.includes('main')) add('no-main', 'warning', 'No <main> landmark — screen-reader users cannot skip to content.', 1);
+
+  // Positive tabindex
+  const posTab = Array.from(document.querySelectorAll('[tabindex]')).filter(el => {
+    const t = parseInt(el.getAttribute('tabindex') || '0', 10);
+    return t > 0;
+  });
+  add('positive-tabindex', 'warning', 'Elements with tabindex > 0 break natural focus order.', posTab.length);
+
+  // Focus outline removal (heuristic on stylesheets)
+  let outlineNoneRules = 0;
+  try {
+    for (const sheet of Array.from(document.styleSheets)) {
+      try {
+        for (const rule of Array.from(sheet.cssRules || [])) {
+          if (rule instanceof CSSStyleRule && /:focus(?!-visible)/.test(rule.selectorText)) {
+            const o = rule.style.getPropertyValue('outline');
+            if (/none|0/.test(o) && !rule.style.getPropertyValue('box-shadow') && !rule.style.getPropertyValue('border')) {
+              outlineNoneRules++;
+            }
+          }
+        }
+      } catch { /* cross-origin sheet */ }
+    }
+  } catch { /* noop */ }
+  add('focus-outline-removed', 'error', ':focus rules set outline:none with no visible replacement.', outlineNoneRules);
+
+  // html lang
+  if (!document.documentElement.getAttribute('lang')) {
+    add('html-lang', 'warning', 'The <html> element has no lang attribute.', 1);
+  }
+
+  return { issues, headingOutline: outline, landmarks };
+}
+

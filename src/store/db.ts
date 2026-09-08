@@ -15,6 +15,8 @@ export function getDb(config: DesignScoutConfig): Database.Database {
   return _db;
 }
 
+const SCHEMA_VERSION = 2;
+
 function migrate(db: Database.Database): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS sites (
@@ -58,6 +60,63 @@ function migrate(db: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_patterns_site ON patterns(site_id);
     CREATE INDEX IF NOT EXISTS idx_patterns_category ON patterns(category);
   `);
+
+  const current = db.pragma('user_version', { simple: true }) as number;
+
+  if (current < 1) {
+    addColumnIfMissing(db, 'screenshots', 'device_type', 'TEXT');
+    addColumnIfMissing(db, 'screenshots', 'viewport_label', 'TEXT');
+  }
+
+  if (current < 2) {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS crawls (
+        id TEXT PRIMARY KEY,
+        start_url TEXT NOT NULL,
+        data TEXT NOT NULL,
+        generated_at TEXT DEFAULT (datetime('now'))
+      );
+
+      CREATE TABLE IF NOT EXISTS pages (
+        id TEXT PRIMARY KEY,
+        crawl_id TEXT NOT NULL REFERENCES crawls(id) ON DELETE CASCADE,
+        site_id TEXT REFERENCES sites(id) ON DELETE SET NULL,
+        url TEXT NOT NULL,
+        path TEXT,
+        depth INTEGER DEFAULT 0,
+        title TEXT,
+        fingerprint TEXT,
+        duplicate_of TEXT
+      );
+
+      CREATE TABLE IF NOT EXISTS audits (
+        id TEXT PRIMARY KEY,
+        site_id TEXT REFERENCES sites(id) ON DELETE CASCADE,
+        target TEXT,
+        data TEXT NOT NULL,
+        generated_at TEXT DEFAULT (datetime('now'))
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_pages_crawl ON pages(crawl_id);
+      CREATE INDEX IF NOT EXISTS idx_audits_site ON audits(site_id);
+    `);
+  }
+
+  if (current < SCHEMA_VERSION) {
+    db.pragma(`user_version = ${SCHEMA_VERSION}`);
+  }
+}
+
+function addColumnIfMissing(
+  db: Database.Database,
+  table: string,
+  column: string,
+  type: string,
+): void {
+  const cols = db.pragma(`table_info(${table})`) as { name: string }[];
+  if (!cols.some(c => c.name === column)) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
+  }
 }
 
 export function closeDb(): void {

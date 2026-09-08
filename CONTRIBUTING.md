@@ -22,18 +22,27 @@ npx tsc --noEmit     # Type check without building
 npx tsx src/cli.ts capture https://example.com
 ```
 
+## Tests
+
+```bash
+npm test             # node:test suites via tsx
+```
+
+Add a `*.test.ts` next to the module you change. Audit rules, token formats, and
+codegen output all have coverage — keep it green.
+
 ## What to Work On
 
-- **New capture strategies** — mobile viewports, CSS selectors, multi-page crawls
-- **CSS extraction from DOM** — computed styles, not just vision analysis
-- **More output formats** — Figma tokens, Style Dictionary
-- **Search improvements** — full-text search with better ranking
 - **Web UI** — browser-based inspiration dashboard
+- **Visual regression** — diff two captures of the same URL
+- **More audit rules** — every new AI tell you can pin down deterministically
+- **Search improvements** — full-text search with better ranking
+- **Crawl heuristics** — smarter near-duplicate detection, sitemap support
 
 ## Pull Requests
 
 1. Fork and branch from `main`
-2. Run `npx tsc --noEmit` before pushing
+2. Run `npx tsc --noEmit` and `npm test` before pushing
 3. One feature or fix per PR
 4. Brief description of what changed and why
 

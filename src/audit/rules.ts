@@ -92,6 +92,8 @@ export interface CheckInput {
   colors?: string[];
   fonts?: string[];
   backgroundColors?: string[];
+  /** Colours known to be used as text. Contrast checks use these when present. */
+  textColors?: string[];
 }
 
 export interface Finding {
@@ -509,6 +511,118 @@ function checkGrayOnColor(input: CheckInput): Finding[] {
   return findings;
 }
 
+function checkGlassmorphism(input: CheckInput): Finding[] {
+  const source = (input.css || '') + (input.html || '');
+  if (!source) return [];
+  const findings: Finding[] = [];
+  const blur = /backdrop-filter\s*:\s*[^;]*blur|backdrop-blur|-webkit-backdrop-filter/i.test(source);
+  const translucent = /rgba?\([^)]+,\s*0?\.[0-5]\d*\s*\)|\/\s*[0-5]?\d%\s*\)|bg-white\/\d{1,2}\b|bg-black\/\d{1,2}\b/i.test(source);
+  if (blur && translucent) {
+    findings.push({
+      ruleId: 'glassmorphism',
+      category: 'slop',
+      name: 'Glassmorphism',
+      severity: 'warning',
+      description: 'Frosted-glass panels (backdrop-blur over a translucent fill) are a default "modern" AI look. They rarely survive contact with real content behind them.',
+      fix: 'Use an opaque surface with a real elevation shadow, or commit to the effect as a deliberate brand choice.',
+    });
+  }
+  return findings;
+}
+
+function checkFullViewportSections(input: CheckInput): Finding[] {
+  const source = (input.css || '') + (input.html || '');
+  if (!source) return [];
+  const matches = source.match(/(?:min-)?height\s*:\s*100(?:d|s|l)?vh|\bh-screen\b|\bmin-h-screen\b/gi) || [];
+  if (matches.length >= 3) {
+    return [{
+      ruleId: 'full-viewport-sections',
+      category: 'slop',
+      name: 'Stacked 100vh sections',
+      severity: 'advisory',
+      description: `${matches.length} full-viewport-height sections. Forcing every section to fill the screen is an AI layout reflex — it wastes space and fights the content.`,
+      snippet: `${matches.length} occurrences`,
+      fix: 'Size sections to their content with generous but finite padding.',
+    }];
+  }
+  return [];
+}
+
+function checkUniformRadius(input: CheckInput): Finding[] {
+  const source = (input.css || '') + (input.html || '');
+  if (!source) return [];
+  const tw = source.match(/\brounded-(?:xl|2xl|3xl)\b/g) || [];
+  if (tw.length >= 12) {
+    return [{
+      ruleId: 'uniform-radius',
+      category: 'slop',
+      name: 'Everything rounded-xl',
+      severity: 'advisory',
+      description: `rounded-xl/2xl appears ${tw.length} times. A single large radius on every surface — cards, buttons, inputs, images, avatars — is a recognizable AI default.`,
+      snippet: `${tw.length} occurrences`,
+      fix: 'Use a small radius scale (e.g. 4px controls, 8px cards) and let some elements be square.',
+    }];
+  }
+  return [];
+}
+
+function checkEmojiHeadings(input: CheckInput): Finding[] {
+  if (!input.html) return [];
+  const findings: Finding[] = [];
+  const emoji = /[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2190}-\u{21FF}\u{2B00}-\u{2BFF}]/u;
+  const headings = input.html.match(/<h[1-3][^>]*>([\s\S]*?)<\/h[1-3]>/gi) || [];
+  const withEmoji = headings.filter(h => emoji.test(h.replace(/<[^>]+>/g, '')));
+  if (withEmoji.length >= 2) {
+    findings.push({
+      ruleId: 'emoji-headings',
+      category: 'slop',
+      name: 'Emoji in headings',
+      severity: 'warning',
+      description: `${withEmoji.length} headings contain emoji. Emoji as section-heading decoration is a strong AI tell.`,
+      snippet: withEmoji[0].replace(/<[^>]+>/g, '').trim().slice(0, 60),
+      fix: 'Remove the emoji. If you need a visual marker, use a deliberate icon system consistently.',
+    });
+  }
+  return findings;
+}
+
+function checkIconTileHeading(input: CheckInput): Finding[] {
+  if (!input.html) return [];
+  // <div class="...icon...">... <svg> ...</div> ... <h2/h3>
+  const pattern = /<div[^>]*class="[^"]*(?:icon|feature)[^"]*"[^>]*>\s*<svg[\s\S]{0,400}?<\/svg>\s*<\/div>\s*(?:<[^>]+>\s*){0,2}<h[2-4]/gi;
+  const matches = input.html.match(pattern) || [];
+  if (matches.length >= 3) {
+    return [{
+      ruleId: 'icon-tile-heading',
+      category: 'slop',
+      name: 'Icon tile above every heading',
+      severity: 'warning',
+      description: `${matches.length} sections lead with a small icon in a rounded tile directly above the heading. This is the single most recognizable AI feature-section layout.`,
+      snippet: `${matches.length} occurrences`,
+      fix: 'Drop the icon tiles, or use them sparingly where they add real meaning. Let the headings carry the hierarchy.',
+    }];
+  }
+  return [];
+}
+
+function checkStaggerReveal(input: CheckInput): Finding[] {
+  const source = (input.css || '') + (input.html || '');
+  if (!source) return [];
+  const delays = source.match(/(?:animation-delay|transition-delay)\s*:\s*[0-9.]+m?s|\bdelay-\[?\d+/gi) || [];
+  const aos = /data-aos|data-aos-delay/i.test(source);
+  if (delays.length >= 5 || aos) {
+    return [{
+      ruleId: 'stagger-reveal',
+      category: 'slop',
+      name: 'Staggered scroll-reveal',
+      severity: 'advisory',
+      description: 'Incrementing animation-delay values (or AOS data attributes) staggering elements in on scroll is a default AI motion pattern.',
+      fix: 'Reveal content in one clean motion, or don\'t animate it in at all. Reserve motion for state changes.',
+    }];
+  }
+  return [];
+}
+
 // ══════════════════════════════════════════════════════════════════════════════
 // COPY / PUNCTUATION CHECKS
 // ══════════════════════════════════════════════════════════════════════════════
@@ -584,22 +698,46 @@ function checkAIPunctuation(input: CheckInput): Finding[] {
   return findings;
 }
 
+function checkGenericTestimonials(input: CheckInput): Finding[] {
+  if (!input.text) return [];
+  const phrases = [
+    'game changer', 'game-changer', 'changed the way we', 'best decision we',
+    'can\'t imagine going back', 'couldn\'t be happier', 'exceeded our expectations',
+    'highly recommend', 'a must-have', 'life-?saver', 'worth every penny',
+  ];
+  const hits = phrases.filter(p => new RegExp(p, 'i').test(input.text!));
+  if (hits.length >= 2) {
+    return [{
+      ruleId: 'generic-testimonials',
+      category: 'copy',
+      name: 'Template testimonial language',
+      severity: 'advisory',
+      description: `Testimonial copy uses generic praise phrases (${hits.slice(0, 3).join(', ')}). Real quotes are specific about what changed and by how much.`,
+      snippet: hits.join(', '),
+      fix: 'Use verbatim quotes with a name, role, and a concrete outcome — or cut the section.',
+    }];
+  }
+  return [];
+}
+
 // ══════════════════════════════════════════════════════════════════════════════
 // QUALITY CHECKS
 // ══════════════════════════════════════════════════════════════════════════════
 
 function checkContrastRatio(input: CheckInput): Finding[] {
-  if (!input.colors?.length || !input.backgroundColors?.length) return [];
+  const fgList = input.textColors?.length ? input.textColors : input.colors;
+  if (!fgList?.length || !input.backgroundColors?.length) return [];
   const findings: Finding[] = [];
   const seen = new Set<string>();
 
-  for (const fg of input.colors) {
+  for (const fg of fgList) {
     for (const bg of input.backgroundColors) {
       const fgHex = fg.startsWith('#') ? fg : `#${fg}`;
       const bgHex = bg.startsWith('#') ? bg : `#${bg}`;
       const key = `${fgHex}:${bgHex}`;
       if (seen.has(key)) continue;
       seen.add(key);
+      if (fgHex.toLowerCase() === bgHex.toLowerCase()) continue; // same colour, not a real pair
 
       try {
         const ratio = contrastRatio(fgHex, bgHex);
@@ -646,9 +784,16 @@ export const RULES: AntiPatternRule[] = [
   { id: 'radial-halo', category: 'slop', name: 'Radial halo', description: 'Gradient spotlight background', check: checkRadialHalo },
   { id: 'side-tab', category: 'slop', name: 'Side-tab border', description: 'Thick single-side card border', check: checkSideTabBorder },
   { id: 'bounce-easing', category: 'slop', name: 'Bounce easing', description: 'Bounce/elastic/spring animation', check: checkBounceEasing },
+  { id: 'glassmorphism', category: 'slop', name: 'Glassmorphism', description: 'Backdrop-blur over translucent fill', check: checkGlassmorphism },
+  { id: 'full-viewport-sections', category: 'slop', name: 'Stacked 100vh sections', description: 'Every section fills the screen', check: checkFullViewportSections },
+  { id: 'uniform-radius', category: 'slop', name: 'Uniform large radius', description: 'rounded-xl on everything', check: checkUniformRadius },
+  { id: 'emoji-headings', category: 'slop', name: 'Emoji headings', description: 'Emoji as heading decoration', check: checkEmojiHeadings },
+  { id: 'icon-tile-heading', category: 'slop', name: 'Icon tile above heading', description: 'Icon-in-tile before every section heading', check: checkIconTileHeading },
+  { id: 'stagger-reveal', category: 'slop', name: 'Staggered scroll reveal', description: 'Incrementing animation-delay on scroll', check: checkStaggerReveal },
   // Copy tells
   { id: 'ai-copy', category: 'copy', name: 'AI copy phrase', description: 'LLM filler phrases', check: checkAICopyPhrases },
   { id: 'ai-punctuation', category: 'copy', name: 'AI punctuation', description: 'Em-dash, exclamation, ellipsis density', check: checkAIPunctuation },
+  { id: 'generic-testimonials', category: 'copy', name: 'Template testimonials', description: 'Generic praise phrases', check: checkGenericTestimonials },
   // Quality
   { id: 'pure-gray', category: 'quality', name: 'Pure gray', description: 'Untinted neutral gray', check: checkPureGrays },
   { id: 'pure-black', category: 'quality', name: 'Pure black', description: 'Unwarmed #000000', check: checkPureBlackWhite },
@@ -682,12 +827,94 @@ export function auditTokens(tokens: {
 
   const bgKeys = Object.keys(tokens.colors).filter(k => /background|bg|surface|base/i.test(k));
   const bgColors = bgKeys.map(k => tokens.colors[k]);
+  // Contrast only makes sense for colours actually used as text.
+  const textKeys = Object.keys(tokens.colors).filter(k => /foreground|text|ink/i.test(k));
+  const textColors = textKeys.map(k => tokens.colors[k]);
 
   return runAudit({
     colors: allColors,
+    textColors: textColors.length ? textColors : undefined,
     backgroundColors: bgColors,
     fonts: [...new Set(fonts)],
   });
+}
+
+/**
+ * Audit a live-page DOM extraction (from browser/extract.ts). Runs colour/font
+ * checks plus signals only visible on a real page.
+ */
+export function auditExtraction(extraction: {
+  colors?: { allUnique?: string[]; backgrounds?: string[]; accents?: string[] };
+  typography?: { headingFonts?: string[]; bodyFont?: string; fontSizes?: string[] };
+  animations?: { totalAnimatedCount?: number; libraries?: string[]; scrollTriggered?: boolean };
+  layout?: { stickyElements?: number; fixedElements?: number };
+  libraries?: string[];
+}): Finding[] {
+  const findings: Finding[] = [];
+
+  const rgbToHex = (c: string): string | null => {
+    const m = c.match(/rgba?\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)/i);
+    if (!m) return c.startsWith('#') ? c : null;
+    return '#' + [m[1], m[2], m[3]].map(n => parseInt(n, 10).toString(16).padStart(2, '0')).join('');
+  };
+
+  const colors = (extraction.colors?.allUnique || []).map(rgbToHex).filter((c): c is string => !!c);
+  const backgrounds = (extraction.colors?.backgrounds || []).map(rgbToHex).filter((c): c is string => !!c);
+  const fonts = [
+    ...(extraction.typography?.headingFonts || []),
+    extraction.typography?.bodyFont || '',
+  ].flatMap(stack => stack.split(',').map(f => f.trim().replace(/['"]/g, ''))).filter(Boolean);
+
+  // Cross-product contrast checks are meaningless without real fg/bg pairings —
+  // an extraction is just two flat lists. Keep only the single worst pair.
+  const raw = runAudit({ colors, backgroundColors: backgrounds, fonts: [...new Set(fonts)] });
+  const contrast = raw.filter(f => f.ruleId === 'low-contrast' || f.ruleId === 'low-contrast-body');
+  const rest = raw.filter(f => f.ruleId !== 'low-contrast' && f.ruleId !== 'low-contrast-body');
+  findings.push(...rest);
+  if (contrast.length) findings.push({ ...contrast[0], description: contrast[0].description + ' (worst of ' + contrast.length + ' extracted colour pairs — verify against real usage)' });
+
+  // Sticky / fixed overload
+  const sticky = extraction.layout?.stickyElements || 0;
+  const fixed = extraction.layout?.fixedElements || 0;
+  if (sticky + fixed >= 6) {
+    findings.push({
+      ruleId: 'sticky-overload',
+      category: 'quality',
+      name: 'Too many pinned elements',
+      severity: 'advisory',
+      description: `${sticky} sticky + ${fixed} fixed elements. Multiple competing pinned elements crowd the viewport and trap scroll.`,
+      fix: 'Keep one pinned element (usually the nav). Let everything else scroll.',
+    });
+  }
+
+  // Font count
+  const uniqueFamilies = new Set(fonts.map(f => f.toLowerCase()));
+  if (uniqueFamilies.size >= 4) {
+    findings.push({
+      ruleId: 'too-many-fonts',
+      category: 'quality',
+      name: 'Too many typefaces',
+      severity: 'warning',
+      description: `${uniqueFamilies.size} distinct font families in use. More than two or three reads as unresolved rather than expressive.`,
+      snippet: [...uniqueFamilies].slice(0, 6).join(', '),
+      fix: 'Pick one display face and one text face. Add a mono only if you show code.',
+    });
+  }
+
+  // Animation library stack
+  const animLibs = extraction.animations?.libraries || [];
+  if (animLibs.length >= 3) {
+    findings.push({
+      ruleId: 'animation-stack',
+      category: 'quality',
+      name: 'Multiple animation libraries',
+      severity: 'advisory',
+      description: `${animLibs.length} animation libraries loaded (${animLibs.join(', ')}). Each adds weight and they often fight each other.`,
+      fix: 'Consolidate on one. Most sites need only CSS transitions plus one scroll library at most.',
+    });
+  }
+
+  return findings;
 }
 
 /**
@@ -715,4 +942,40 @@ export function extractTextFromHtml(html: string): string {
  */
 export function auditCopy(text: string): Finding[] {
   return runAudit({ text });
+}
+
+/**
+ * Audit an HTML / JSX / CSS-in-markup string: copy tells from the visible text,
+ * design tells from the markup, and contrast from colours classified by the
+ * declaration they appear in (color: vs background:, --color-fg vs --color-bg).
+ */
+export function auditMarkup(content: string): Finding[] {
+  const findings: Finding[] = [];
+  const text = extractTextFromHtml(content);
+  findings.push(...auditCopy(text));
+
+  const colorMatches = content.match(/#[0-9a-fA-F]{6}\b/g) || [];
+  const fontMatches = content.match(/font-family:\s*([^;}\n]+)/gi) || [];
+  const fonts = fontMatches.flatMap(m =>
+    m.replace(/font-family:\s*/i, '').split(',').map(f => f.trim().replace(/['"]/g, '')));
+
+  const ctxBefore = (hex: string) => {
+    const idx = content.indexOf(hex);
+    return content.substring(Math.max(0, idx - 40), idx);
+  };
+  const isBg = (hex: string) => /(?:^|[^-])background(?:-color)?\s*:|--(?:color-)?(?:bg|background|surface)\b|\bbg-\[/i.test(ctxBefore(hex));
+  const isText = (hex: string) => /(?:^|[^-])color\s*:|--(?:color-)?(?:fg|foreground|text|ink)\b|\btext-\[/i.test(ctxBefore(hex));
+
+  const bgColors = [...new Set(colorMatches.filter(isBg))];
+  const textColors = [...new Set(colorMatches.filter(isText))];
+
+  findings.push(...runAudit({
+    html: content,
+    colors: [...new Set(colorMatches)],
+    textColors: textColors.length ? textColors : undefined,
+    backgroundColors: bgColors,
+    fonts: [...new Set(fonts)],
+  }));
+
+  return findings;
 }

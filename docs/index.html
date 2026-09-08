@@ -4,435 +4,795 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>DesignScout</title>
-  <meta name="description" content="MCP server that captures websites, extracts design tokens, and audits for AI tells. Built for Claude Code." />
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.7/gsap.min.js" defer></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.7/ScrollTrigger.min.js" defer></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" defer></script>
+  <meta name="description" content="An MCP server for Claude Code that captures real websites, extracts their design system, and audits generated code so it does not read as AI output." />
+  <meta name="theme-color" content="#0C1A16" />
+  <meta property="og:title" content="DesignScout" />
+  <meta property="og:description" content="Capture any website, extract its design system, and build from it with Claude Code." />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="banner.svg" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <script>
+    try {
+      var t = localStorage.getItem('ds-theme');
+      if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t);
+    } catch (e) {}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    /* ============================================================
+       Tokens. shadcn-style variable names, brand-tinted neutrals.
+       Every grey carries a small shift toward the green primary
+       so it reads as chosen, not defaulted.
+       ============================================================ */
     :root {
-      --bg: #B4E0D2; --dark: #0C1A16; --mid: #0F2820; --surface: #132A22;
-      --white: #FEFEFE; --green: #0D7C5F; --red: #D93B3B; --yellow: #F5C842; --teal: #7EECD8;
-      --ink: #0C1A16; --ink-2: #2D4A40; --ink-3: #4A6E62; --ink-4: #6A907F;
-      --shadow: 4px 4px 0 var(--ink); --pill: 999px; --card: 16px;
+      --background: #fbfcfb;
+      --foreground: #0c1a16;
+      --card: #ffffff;
+      --card-foreground: #0c1a16;
+      --muted: #f1f5f3;
+      --muted-foreground: #4a6e62;
+      --border: #e2e9e5;
+      --input: #e2e9e5;
+      --primary: #0d7c5f;
+      --primary-strong: #0c6b52;
+      --primary-foreground: #ffffff;
+      --accent: #eef4f1;
+      --accent-foreground: #0c1a16;
+      --warn: #d93b3b;
+      --warn-surface: #fbeceb;
+      --ring: #0d7c5f;
+      --radius: 12px;
+      --radius-sm: 8px;
+      --shadow-sm: 0 1px 2px rgba(12,26,22,.06), 0 1px 3px rgba(12,26,22,.04);
+      --shadow-md: 0 4px 12px rgba(12,26,22,.07), 0 2px 4px rgba(12,26,22,.05);
+      --shadow-lg: 0 12px 32px rgba(12,26,22,.10), 0 4px 10px rgba(12,26,22,.06);
+      --maxw: 1080px;
+      --header-h: 60px;
     }
-    html { scroll-behavior: auto; }
-    body { background: var(--bg); font-family: 'DM Sans', system-ui, sans-serif; color: var(--ink); overflow-x: hidden; -webkit-font-smoothing: antialiased; }
-    ::selection { background: var(--green); color: var(--white); }
+    :root[data-theme="dark"] {
+      --background: #0c1a16;
+      --foreground: #eaf2ee;
+      --card: #10231d;
+      --card-foreground: #eaf2ee;
+      --muted: #16342b;
+      --muted-foreground: #93b6a9;
+      --border: #1f3b32;
+      --input: #24443a;
+      --primary: #17976a;
+      --primary-strong: #1cac74;
+      --primary-foreground: #ffffff;
+      --accent: #13291f;
+      --accent-foreground: #eaf2ee;
+      --warn: #ec6a6a;
+      --warn-surface: #2a1a1a;
+      --ring: #34b07a;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,.3);
+      --shadow-md: 0 6px 18px rgba(0,0,0,.35);
+      --shadow-lg: 0 18px 40px rgba(0,0,0,.45);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --background: #0c1a16;
+        --foreground: #eaf2ee;
+        --card: #10231d;
+        --card-foreground: #eaf2ee;
+        --muted: #16342b;
+        --muted-foreground: #93b6a9;
+        --border: #1f3b32;
+        --input: #24443a;
+        --primary: #17976a;
+        --primary-strong: #1cac74;
+        --primary-foreground: #ffffff;
+        --accent: #13291f;
+        --accent-foreground: #eaf2ee;
+        --warn: #ec6a6a;
+        --warn-surface: #2a1a1a;
+        --ring: #34b07a;
+        --shadow-sm: 0 1px 2px rgba(0,0,0,.3);
+        --shadow-md: 0 6px 18px rgba(0,0,0,.35);
+        --shadow-lg: 0 18px 40px rgba(0,0,0,.45);
+      }
+    }
 
-    /* ── Type ── */
-    .bebas { font-family: 'Bebas Neue', cursive; letter-spacing: 1px; }
-    .mono { font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--background);
+      color: var(--foreground);
+      font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    ::selection { background: var(--primary); color: var(--primary-foreground); }
+    a { color: inherit; text-decoration: none; }
+    code, pre, .mono { font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', monospace; }
+    img, svg { display: block; max-width: 100%; }
+    :focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: 4px; }
+
+    .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 24px; }
+
+    /* ── Typography ── */
+    h1, h2, h3 { line-height: 1.15; letter-spacing: -0.02em; font-weight: 600; }
+    h2 { font-size: clamp(1.7rem, 3.4vw, 2.35rem); }
+    h3 { font-size: 1.06rem; }
+    .eyebrow {
+      font-family: 'JetBrains Mono', monospace; font-size: .72rem; font-weight: 500;
+      letter-spacing: .14em; text-transform: uppercase; color: var(--primary-strong);
+    }
+    .lead { color: var(--muted-foreground); font-size: 1.05rem; max-width: 46ch; }
+    .section-head { max-width: 52ch; margin-bottom: 44px; }
+    .section-head p { color: var(--muted-foreground); margin-top: 12px; }
 
     /* ── Buttons ── */
     .btn {
-      font-family: 'Bebas Neue', cursive; font-size: 1.05rem; letter-spacing: 2px;
-      padding: .7rem 1.8rem; border-radius: var(--pill);
-      border: 3px solid var(--ink); box-shadow: var(--shadow);
-      cursor: pointer; text-decoration: none; display: inline-block;
-      transition: box-shadow .12s, transform .12s;
+      display: inline-flex; align-items: center; gap: .5rem;
+      font-size: .92rem; font-weight: 600; line-height: 1;
+      padding: .72rem 1.15rem; border-radius: var(--radius-sm);
+      border: 1px solid transparent; cursor: pointer;
+      transition: background .15s ease, border-color .15s ease, transform .15s ease, box-shadow .15s ease;
     }
-    .btn:hover { transform: translate(-2px,-2px); box-shadow: 7px 7px 0 var(--ink); }
-    .btn:active { transform: translate(2px,2px); box-shadow: 1px 1px 0 var(--ink); }
-    .btn--red { background: var(--red); color: var(--white); }
-    .btn--white { background: var(--white); color: var(--ink); }
+    .btn:active { transform: translateY(1px); }
+    .btn--primary { background: var(--primary); color: var(--primary-foreground); box-shadow: var(--shadow-sm); }
+    .btn--primary:hover { background: var(--primary-strong); box-shadow: var(--shadow-md); }
+    .btn--ghost { background: var(--card); color: var(--foreground); border-color: var(--border); }
+    .btn--ghost:hover { background: var(--muted); }
 
-    /* ── Nav ── */
-    .nav { position: sticky; top: 1rem; z-index: 90; display: flex; justify-content: center; padding: 0 1.5rem; }
-    .nav__bar {
-      background: var(--white); border: 3px solid var(--ink); border-radius: var(--pill); box-shadow: var(--shadow);
-      padding: .5rem .7rem .5rem 1.4rem; display: inline-flex; align-items: center; gap: 1.6rem;
+    /* ── Header ── */
+    header {
+      position: sticky; top: 0; z-index: 50;
+      height: var(--header-h);
+      background: color-mix(in srgb, var(--background) 88%, transparent);
+      border-bottom: 1px solid transparent;
+      transition: border-color .2s ease, background .2s ease;
     }
-    .nav__logo { font-family: 'Bebas Neue', cursive; font-size: 1.3rem; letter-spacing: 2px; color: var(--ink); text-decoration: none; display: flex; align-items: center; gap: .45rem; }
-    .nav__dot { width: 9px; height: 9px; background: var(--green); border-radius: 50%; }
-    .nav__links { display: flex; gap: 1.3rem; align-items: center; }
-    .nav__links a { font-weight: 600; font-size: .78rem; letter-spacing: .03em; color: var(--ink-2); text-decoration: none; transition: color .15s; }
-    .nav__links a:hover { color: var(--green); }
-    .nav__gh {
-      font-family: 'Bebas Neue', cursive; font-size: .9rem; letter-spacing: 2px;
-      padding: .35rem 1rem; background: var(--green); color: var(--white);
-      border: 3px solid var(--ink); border-radius: var(--pill); box-shadow: 3px 3px 0 var(--ink);
-      text-decoration: none; transition: transform .12s, box-shadow .12s;
+    header.scrolled { border-bottom-color: var(--border); background: color-mix(in srgb, var(--background) 96%, transparent); }
+    .nav { height: 100%; display: flex; align-items: center; justify-content: space-between; }
+    .brand { display: flex; align-items: center; gap: .55rem; font-weight: 600; letter-spacing: -0.01em; }
+    .brand .mark { width: 22px; height: 22px; border-radius: 6px; background: var(--primary); position: relative; flex: none; }
+    .brand .mark::after { content: ""; position: absolute; inset: 6px; border: 2px solid var(--primary-foreground); border-radius: 50%; }
+    .nav-links { display: flex; align-items: center; gap: 28px; }
+    .nav-links a { font-size: .9rem; color: var(--muted-foreground); transition: color .15s ease; }
+    .nav-links a:hover { color: var(--foreground); }
+    .nav-right { display: flex; align-items: center; gap: 12px; }
+    .icon-btn {
+      width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center;
+      border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--card);
+      color: var(--muted-foreground); cursor: pointer; transition: background .15s ease, color .15s ease;
     }
-    .nav__gh:hover { transform: translate(-1px,-1px); box-shadow: 4px 4px 0 var(--ink); }
+    .icon-btn:hover { background: var(--muted); color: var(--foreground); }
+    .theme-toggle .moon { display: none; }
+    :root[data-theme="dark"] .theme-toggle .sun { display: none; }
+    :root[data-theme="dark"] .theme-toggle .moon { display: block; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) .theme-toggle .sun { display: none; }
+      :root:not([data-theme="light"]) .theme-toggle .moon { display: block; }
+    }
+
+    /* ── Badge ── */
+    .badge {
+      display: inline-flex; align-items: center; gap: .4rem;
+      font-family: 'JetBrains Mono', monospace; font-size: .72rem; font-weight: 500;
+      padding: .3rem .6rem; border-radius: 999px;
+      border: 1px solid var(--border); background: var(--muted); color: var(--muted-foreground);
+    }
+    .badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--primary); }
 
     /* ── Hero ── */
-    .hero {
-      max-width: 980px; margin: 0 auto; padding: 8rem 2rem 6rem;
-      display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: center;
+    .hero { padding: 84px 0 72px; }
+    .hero-grid { display: grid; grid-template-columns: 1.05fr .95fr; gap: 56px; align-items: center; }
+    .hero h1 { font-size: clamp(2.5rem, 6vw, 3.75rem); font-weight: 600; margin: 22px 0 20px; }
+    .hero h1 .stroke { color: var(--muted-foreground); }
+    .hero .lead { font-size: 1.12rem; max-width: 42ch; }
+    .hero-actions { display: flex; gap: 12px; margin-top: 30px; flex-wrap: wrap; }
+    .hero-meta { display: flex; gap: 22px; margin-top: 34px; flex-wrap: wrap; }
+    .hero-meta div { display: flex; flex-direction: column; gap: 2px; }
+    .hero-meta .n { font-size: 1.3rem; font-weight: 600; letter-spacing: -0.02em; }
+    .hero-meta .l { font-size: .78rem; color: var(--muted-foreground); }
+
+    /* ── Terminal card ── */
+    .terminal {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); box-shadow: var(--shadow-lg); overflow: hidden;
     }
-    .hero__title { font-family: 'Bebas Neue', cursive; font-size: clamp(3.5rem, 9vw, 5.2rem); line-height: .88; margin-bottom: 1.3rem; }
-    .hero__title span { -webkit-text-stroke: 2.5px var(--ink); color: transparent; }
-    .hero__body { font-size: .95rem; line-height: 1.7; color: var(--ink-2); max-width: 400px; margin-bottom: 2rem; }
-    .hero__actions { display: flex; gap: .9rem; flex-wrap: wrap; }
-    .hero__visual { position: relative; }
-    #hero-gl { position: absolute; inset: -20px; z-index: 0; pointer-events: none; opacity: .6; }
-
-    /* ── Terminal ── */
-    .term {
-      position: relative; z-index: 1;
-      background: var(--dark); border: 3px solid var(--ink); border-radius: var(--card);
-      box-shadow: 6px 6px 0 var(--ink); overflow: hidden;
+    .terminal__bar {
+      display: flex; align-items: center; gap: 7px;
+      padding: 11px 14px; border-bottom: 1px solid var(--border); background: var(--muted);
     }
-    .term__bar { display: flex; align-items: center; gap: .4rem; padding: .5rem .9rem; border-bottom: 1px solid rgba(126,236,216,.06); }
-    .term__dot { width: 8px; height: 8px; border-radius: 50%; }
-    .term__dot--r { background: #ff5f57; } .term__dot--y { background: #febc2e; } .term__dot--g { background: #28c840; }
-    .term__label { font-size: .58rem; color: var(--ink-3); margin-left: .4rem; font-family: 'DM Sans', sans-serif; font-weight: 600; letter-spacing: .03em; }
-    .term__body { padding: .8rem 1rem; font-family: 'JetBrains Mono', monospace; font-size: .68rem; line-height: 1.55; color: #b8d8cc; }
-    .term__body .cm { color: #4a6e5f; } .term__body .g { color: var(--teal); } .term__body .r { color: #e8706a; }
-    .term__body .y { color: var(--yellow); } .term__body .b { font-weight: 700; color: #d8f0e6; }
-    .term__line { opacity: 0; }
+    .terminal__bar span { width: 10px; height: 10px; border-radius: 50%; background: var(--border); }
+    .terminal__bar .label {
+      margin-left: 6px; font-family: 'JetBrains Mono', monospace; font-size: .7rem;
+      color: var(--muted-foreground); width: auto; height: auto; border-radius: 0;
+    }
+    .terminal__body { padding: 18px 18px 20px; font-family: 'JetBrains Mono', monospace; font-size: .78rem; line-height: 1.85; }
+    .terminal__body .line { opacity: 0; transform: translateY(4px); }
+    .terminal__body .prompt { color: var(--primary-strong); font-weight: 700; }
+    .terminal__body .cmd { color: var(--foreground); font-weight: 700; }
+    .terminal__body .dim { color: var(--muted-foreground); }
+    .terminal__body .ok { color: var(--primary-strong); font-weight: 600; }
+    .terminal__body .flag { color: var(--warn); font-weight: 600; }
 
-    /* ── Section utility ── */
-    .sec { max-width: 980px; margin: 0 auto; padding: 7rem 2rem; }
-    .sec--dark { background: var(--dark); }
-    .sec--mint { background: var(--bg); }
-    .sec__h { font-family: 'Bebas Neue', cursive; font-size: clamp(1.9rem, 4.5vw, 2.8rem); letter-spacing: 2px; line-height: 1; margin-bottom: 2.5rem; }
-    .sec--dark .sec__h { color: var(--white); }
+    /* ── Section rhythm ── */
+    section[id], div[id] { scroll-margin-top: 84px; }
+    section.block { padding: 76px 0; border-top: 1px solid var(--border); }
+    section.block.tint { background: var(--muted); }
 
-    /* ── Usage examples ── */
-    .usage { display: flex; flex-direction: column; gap: 3.5rem; }
-    .usage__item { display: grid; grid-template-columns: 280px 1fr; gap: 2rem; align-items: start; }
-    .usage__item:nth-child(even) { grid-template-columns: 1fr 280px; }
-    .usage__item:nth-child(even) .usage__text { order: 1; }
-    .usage__name { font-family: 'Bebas Neue', cursive; font-size: 1.3rem; letter-spacing: 1px; color: var(--white); margin-bottom: .5rem; }
-    .usage__desc { font-size: .82rem; line-height: 1.65; color: rgba(200,224,214,.5); }
-    .usage__term { width: 100%; }
+    /* ── Capability cards ── */
+    .cap-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .card {
+      background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 22px; box-shadow: var(--shadow-sm);
+      transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+    }
+    .card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: color-mix(in srgb, var(--primary) 35%, var(--border)); }
+    .card__icon {
+      width: 34px; height: 34px; border-radius: var(--radius-sm);
+      display: inline-flex; align-items: center; justify-content: center;
+      background: var(--accent); color: var(--primary-strong); margin-bottom: 14px;
+    }
+    .card__icon svg { width: 18px; height: 18px; }
+    .card h3 { margin-bottom: 7px; }
+    .card p { font-size: .9rem; color: var(--muted-foreground); }
 
-    /* ── Tools list ── */
-    .tools { display: grid; grid-template-columns: repeat(3, 1fr); gap: .8rem; }
+    /* ── Pipeline ── */
+    .pipeline { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; counter-reset: step; }
+    .step {
+      background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 20px; position: relative;
+    }
+    .step::before {
+      counter-increment: step; content: counter(step, decimal-leading-zero);
+      font-family: 'JetBrains Mono', monospace; font-size: .74rem; font-weight: 700;
+      color: var(--primary-strong);
+    }
+    .step h3 { margin: 8px 0 6px; font-size: .98rem; }
+    .step p { font-size: .85rem; color: var(--muted-foreground); }
+    .step .arrow { position: absolute; right: -11px; top: 50%; transform: translateY(-50%); color: var(--border); z-index: 2; }
+    .step:last-child .arrow { display: none; }
+
+    /* ── Tools ── */
+    .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 26px; }
+    .tab {
+      font-size: .85rem; font-weight: 500; padding: .45rem .9rem; border-radius: 999px;
+      border: 1px solid var(--border); background: var(--card); color: var(--muted-foreground);
+      cursor: pointer; transition: background .15s ease, color .15s ease, border-color .15s ease;
+    }
+    .tab:hover { color: var(--foreground); }
+    .tab[aria-selected="true"] { background: var(--primary); color: var(--primary-foreground); border-color: var(--primary); }
+    .tool-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
     .tool {
-      background: var(--white); border: 3px solid var(--ink); border-radius: var(--card);
-      box-shadow: var(--shadow); padding: 1.2rem 1.1rem;
-      transition: transform .15s, box-shadow .15s;
+      background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 18px; box-shadow: var(--shadow-sm);
+      transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
     }
-    .tool:hover { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 var(--ink); }
-    .tool__name { font-family: 'JetBrains Mono', monospace; font-size: .72rem; font-weight: 700; color: var(--green); margin-bottom: .4rem; }
-    .tool__desc { font-size: .78rem; line-height: 1.5; color: var(--ink-3); }
+    .tool:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: color-mix(in srgb, var(--primary) 30%, var(--border)); }
+    .tool__name { font-family: 'JetBrains Mono', monospace; font-size: .82rem; font-weight: 700; color: var(--primary-strong); }
+    .tool__cat {
+      float: right; font-family: 'JetBrains Mono', monospace; font-size: .62rem; letter-spacing: .1em;
+      text-transform: uppercase; color: var(--muted-foreground);
+      border: 1px solid var(--border); border-radius: 999px; padding: .12rem .5rem;
+    }
+    .tool p { font-size: .84rem; color: var(--muted-foreground); margin-top: 9px; clear: both; }
+    .tool.hidden { display: none; }
 
-    /* ── Install ── */
-    .install__code {
-      background: var(--surface); border: 3px solid rgba(126,236,216,.08); border-radius: var(--card);
-      padding: 1.3rem 1.5rem; font-family: 'JetBrains Mono', monospace; font-size: .74rem;
-      line-height: 2; color: var(--teal); overflow-x: auto;
+    /* ── Detection columns ── */
+    .detect-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .detect { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; }
+    .detect h3 { display: flex; align-items: center; gap: .5rem; margin-bottom: 14px; }
+    .detect h3 .tag {
+      font-family: 'JetBrains Mono', monospace; font-size: .62rem; letter-spacing: .08em;
+      text-transform: uppercase; padding: .15rem .45rem; border-radius: 4px;
+      background: var(--warn-surface); color: var(--warn);
     }
-    .install__code .cm { color: #4a6e5f; }
-    .install__note { font-size: .8rem; color: rgba(200,224,214,.4); margin-top: 1.3rem; line-height: 1.5; }
+    .chips { display: flex; flex-wrap: wrap; gap: 7px; }
+    .chip {
+      font-size: .78rem; padding: .3rem .62rem; border-radius: 6px;
+      background: var(--muted); border: 1px solid var(--border); color: var(--muted-foreground);
+    }
+
+    /* ── Formats table ── */
+    .formats { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    .formats th, .formats td { text-align: left; padding: 13px 18px; font-size: .88rem; border-bottom: 1px solid var(--border); }
+    .formats th { font-family: 'JetBrains Mono', monospace; font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted-foreground); }
+    .formats tr:last-child td { border-bottom: none; }
+    .formats td:first-child { font-family: 'JetBrains Mono', monospace; font-weight: 600; color: var(--primary-strong); width: 190px; }
+    .formats td:last-child { color: var(--muted-foreground); }
+
+    /* ── Setup ── */
+    .setup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .setup-step { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 22px; }
+    .setup-step .k { font-family: 'JetBrains Mono', monospace; font-size: .74rem; font-weight: 700; color: var(--primary-strong); }
+    .setup-step h3 { margin: 6px 0 12px; font-size: 1rem; }
+    .code {
+      position: relative; background: var(--foreground); color: var(--background);
+      border-radius: var(--radius-sm); padding: 14px 44px 14px 16px;
+      font-family: 'JetBrains Mono', monospace; font-size: .78rem; line-height: 1.7;
+      overflow-x: auto; white-space: pre;
+    }
+    :root[data-theme="dark"] .code { background: var(--muted); color: var(--foreground); border: 1px solid var(--border); }
+    @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .code { background: var(--muted); color: var(--foreground); border: 1px solid var(--border); } }
+    .code .cm { color: color-mix(in srgb, currentColor 55%, transparent); }
+    .copy {
+      position: absolute; top: 8px; right: 8px; width: 30px; height: 30px;
+      display: inline-flex; align-items: center; justify-content: center;
+      border-radius: 6px; border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+      background: transparent; color: inherit; cursor: pointer; opacity: .7;
+      transition: opacity .15s ease, background .15s ease;
+    }
+    .copy:hover { opacity: 1; background: color-mix(in srgb, currentColor 12%, transparent); }
+    .copy.copied { color: var(--primary-strong); border-color: var(--primary-strong); opacity: 1; }
+    .setup-note { margin-top: 18px; font-size: .88rem; color: var(--muted-foreground); }
+    .setup-note code { background: var(--muted); border: 1px solid var(--border); border-radius: 4px; padding: .08rem .35rem; font-size: .82rem; }
 
     /* ── CTA ── */
-    .cta { background: var(--green); }
-    .cta__inner { max-width: 980px; margin: 0 auto; padding: 5rem 2rem; text-align: center; }
-    .cta__h { font-family: 'Bebas Neue', cursive; font-size: clamp(2.2rem, 7vw, 3.8rem); letter-spacing: 2px; color: var(--white); line-height: .95; margin-bottom: 1.1rem; }
-    .cta__p { font-size: .88rem; color: rgba(255,255,255,.6); max-width: 380px; margin: 0 auto 1.8rem; line-height: 1.55; }
+    .cta-box {
+      background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+      box-shadow: var(--shadow-md); padding: 48px; text-align: center;
+    }
+    .cta-box h2 { margin-bottom: 12px; }
+    .cta-box p { color: var(--muted-foreground); max-width: 44ch; margin: 0 auto 26px; }
+    .cta-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
 
     /* ── Footer ── */
-    .ft { background: var(--dark); }
-    .ft__inner { max-width: 980px; margin: 0 auto; padding: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: .8rem; }
-    .ft__brand { font-family: 'Bebas Neue', cursive; font-size: 1.1rem; letter-spacing: 2px; color: var(--white); display: flex; align-items: center; gap: .4rem; }
-    .ft__brand .d { width: 7px; height: 7px; background: var(--green); border-radius: 50%; }
-    .ft__links { display: flex; gap: .9rem; }
-    .ft__links a { color: rgba(200,224,214,.25); font-size: .72rem; font-weight: 600; text-decoration: none; }
-    .ft__links a:hover { color: var(--white); }
+    footer { border-top: 1px solid var(--border); padding: 34px 0; }
+    .foot { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; }
+    .foot .brand { font-size: .95rem; }
+    .foot-links { display: flex; gap: 20px; }
+    .foot-links a { font-size: .85rem; color: var(--muted-foreground); }
+    .foot-links a:hover { color: var(--foreground); }
 
-    @media (max-width: 768px) {
-      .nav__links { display: none; }
-      .hero { grid-template-columns: 1fr; padding: 5rem 1.5rem 3rem; }
-      .hero__visual { order: -1; }
-      .usage__item, .usage__item:nth-child(even) { grid-template-columns: 1fr; }
-      .usage__item:nth-child(even) .usage__text { order: 0; }
-      .tools { grid-template-columns: 1fr; }
-      .ft__inner { flex-direction: column; text-align: center; }
+    /* ── Scroll reveal ── */
+    .reveal { opacity: 0; transform: translateY(14px); transition: opacity .6s cubic-bezier(.22,1,.36,1), transform .6s cubic-bezier(.22,1,.36,1); }
+    .reveal.in { opacity: 1; transform: none; }
+
+    /* ── Responsive ── */
+    @media (max-width: 960px) {
+      .hero-grid { grid-template-columns: 1fr; gap: 40px; }
+      .cap-grid, .tool-grid, .detect-grid { grid-template-columns: repeat(2, 1fr); }
+      .pipeline { grid-template-columns: repeat(2, 1fr); }
+      .step .arrow { display: none; }
+      .setup-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 620px) {
+      .wrap { padding: 0 18px; }
+      .nav-links { display: none; }
+      .cap-grid, .tool-grid, .detect-grid, .pipeline { grid-template-columns: 1fr; }
+      .hero { padding: 56px 0 52px; }
+      .cta-box { padding: 32px 22px; }
+      .formats td:first-child { width: auto; }
+      .foot { justify-content: center; text-align: center; }
     }
     @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
-      .term__line { opacity: 1 !important; }
+      html { scroll-behavior: auto; }
+      .reveal { opacity: 1; transform: none; transition: none; }
+      .terminal__body .line { opacity: 1; transform: none; }
+      .card:hover, .tool:hover { transform: none; }
     }
   </style>
 </head>
 <body>
 
-  <nav class="nav"><div class="nav__bar">
-    <a href="#" class="nav__logo"><span class="nav__dot"></span> DesignScout</a>
-    <div class="nav__links"><a href="#usage">Usage</a><a href="#tools">Tools</a><a href="#install">Install</a></div>
-    <a href="https://github.com/SpenceChakabva/designscout" target="_blank" rel="noopener" class="nav__gh">GitHub</a>
-  </div></nav>
-
-  <!-- ────────────────── HERO ────────────────── -->
-  <section class="hero">
-    <div>
-      <h1 class="hero__title">DESIGN<span>SCOUT</span></h1>
-      <p class="hero__body">MCP server for Claude Code. Captures websites with a headless browser, extracts colors, type, icons, and animations from the live DOM, then audits the output so it does not look like a model wrote it.</p>
-      <div class="hero__actions">
-        <a href="#install" class="btn btn--red">Get Started</a>
-        <a href="https://github.com/SpenceChakabva/designscout" target="_blank" rel="noopener" class="btn btn--white">Source Code</a>
+  <header id="header">
+    <div class="wrap nav">
+      <a href="#top" class="brand"><span class="mark"></span> DesignScout</a>
+      <nav class="nav-links">
+        <a href="#capabilities">Capabilities</a>
+        <a href="#how">How it works</a>
+        <a href="#tools">Tools</a>
+        <a href="#detection">Detection</a>
+        <a href="#setup">Setup</a>
+      </nav>
+      <div class="nav-right">
+        <button class="icon-btn theme-toggle" id="themeToggle" type="button" aria-label="Toggle colour theme">
+          <svg class="sun" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+          <svg class="moon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+        </button>
+        <a href="https://github.com/SpenceChakabva/designscout" target="_blank" rel="noopener" class="btn btn--ghost" style="padding:.5rem .85rem;font-size:.85rem;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.58 2 12.25c0 4.53 2.87 8.37 6.84 9.73.5.1.68-.22.68-.49 0-.24-.01-.87-.01-1.71-2.78.62-3.37-1.37-3.37-1.37-.45-1.18-1.11-1.5-1.11-1.5-.91-.64.07-.62.07-.62 1 .07 1.53 1.06 1.53 1.06.89 1.56 2.34 1.11 2.91.85.09-.66.35-1.11.63-1.37-2.22-.26-4.56-1.14-4.56-5.06 0-1.12.39-2.03 1.03-2.75-.1-.26-.45-1.3.1-2.71 0 0 .84-.28 2.75 1.05a9.3 9.3 0 0 1 5 0c1.91-1.33 2.75-1.05 2.75-1.05.55 1.41.2 2.45.1 2.71.64.72 1.03 1.63 1.03 2.75 0 3.93-2.35 4.8-4.58 5.05.36.32.68.94.68 1.9 0 1.37-.01 2.480-.01 2.81 0 .27.18.6.69.49A10.26 10.26 0 0 0 22 12.25C22 6.58 17.52 2 12 2z"/></svg>
+          GitHub
+        </a>
       </div>
     </div>
-    <div class="hero__visual">
-      <canvas id="hero-gl"></canvas>
-      <div class="term">
-        <div class="term__bar"><span class="term__dot term__dot--r"></span><span class="term__dot term__dot--y"></span><span class="term__dot term__dot--g"></span><span class="term__label">claude code</span></div>
-        <div class="term__body">
-<div class="term__line"><span class="b">></span> Capture linear.app, show me 3 styles</div>
-<div class="term__line">&nbsp;</div>
-<div class="term__line"><span class="g">scout_capture</span> <span class="cm">https://linear.app</span></div>
-<div class="term__line"><span class="cm">  12 screenshots, 100% coverage</span></div>
-<div class="term__line"><span class="cm">  8 sections detected</span></div>
-<div class="term__line">&nbsp;</div>
-<div class="term__line"><span class="g">scout_store_patterns</span> <span class="cm">22 patterns</span></div>
-<div class="term__line"><span class="g">scout_styles</span></div>
-<div class="term__line">&nbsp;</div>
-<div class="term__line"><span class="y">1. Refined</span>  <span class="cm">light, spacious, soft radii</span></div>
-<div class="term__line"><span class="y">2. Bold</span>     <span class="cm">dark, saturated, tight</span></div>
-<div class="term__line"><span class="y">3. Expressive</span> <span class="cm">accent-led, rounded</span></div>
+  </header>
+
+  <a id="top"></a>
+
+  <!-- ═══════════════ HERO ═══════════════ -->
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div class="reveal">
+        <span class="badge"><span class="dot"></span> MCP server for Claude Code</span>
+        <h1>Build from real design,<br><span class="stroke">not a model's guess.</span></h1>
+        <p class="lead">DesignScout runs a headless browser, captures how live websites look and are built, and stores the patterns locally. Claude Code reads them, generates tokens and components, and audits the result so nothing ships looking machine made.</p>
+        <div class="hero-actions">
+          <a href="#setup" class="btn btn--primary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            Get started
+          </a>
+          <a href="https://github.com/SpenceChakabva/designscout" target="_blank" rel="noopener" class="btn btn--ghost">View source</a>
+        </div>
+        <div class="hero-meta">
+          <div><span class="n">17</span><span class="l">MCP tools</span></div>
+          <div><span class="n">~25</span><span class="l">audit rules</span></div>
+          <div><span class="n">0</span><span class="l">API keys</span></div>
+          <div><span class="n">MIT</span><span class="l">licensed</span></div>
+        </div>
+      </div>
+
+      <div class="reveal terminal" style="transition-delay:.1s">
+        <div class="terminal__bar">
+          <span></span><span></span><span></span>
+          <span class="label">claude code</span>
+        </div>
+        <div class="terminal__body" id="term">
+<div class="line"><span class="prompt">&gt;</span> Capture linear.app, show me three directions</div>
+<div class="line">&nbsp;</div>
+<div class="line"><span class="cmd">scout_capture</span> <span class="dim">linear.app</span></div>
+<div class="line"><span class="dim">  12 frames, 100% coverage, 8 sections</span></div>
+<div class="line"><span class="cmd">scout_store_patterns</span> <span class="dim">22 patterns saved</span></div>
+<div class="line"><span class="cmd">scout_styles</span></div>
+<div class="line">&nbsp;</div>
+<div class="line"><span class="ok">Refined</span>    <span class="dim">light, spacious, soft radii</span></div>
+<div class="line"><span class="ok">Bold</span>       <span class="dim">dark, saturated, tight grid</span></div>
+<div class="line"><span class="ok">Expressive</span> <span class="dim">accent led, rounded</span></div>
+<div class="line">&nbsp;</div>
+<div class="line"><span class="prompt">&gt;</span> Go with Bold, then audit it</div>
+<div class="line"><span class="cmd">scout_audit</span> <span class="ok">clean, 0 tells</span></div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ────────────────── USAGE ────────────────── -->
-  <div class="sec--dark">
-    <div class="sec" id="usage">
-      <h2 class="sec__h">HOW PEOPLE USE IT</h2>
-      <div class="usage">
-
-        <div class="usage__item">
-          <div class="usage__text">
-            <div class="usage__name">COPY A DESIGN SYSTEM</div>
-            <div class="usage__desc">Capture a client's existing site. DesignScout extracts the actual computed fonts, colors, spacing, and animation libraries from the DOM. Generate a DESIGN.md that any coding tool can enforce.</div>
-          </div>
-          <div class="term usage__term">
-            <div class="term__bar"><span class="term__dot term__dot--r"></span><span class="term__dot term__dot--y"></span><span class="term__dot term__dot--g"></span></div>
-            <div class="term__body"><span class="b">></span> Capture example.com, generate
-   a DESIGN.md from it
-
-<span class="g">scout_capture</span> <span class="cm">example.com</span>
-<span class="cm">  fonts: DM Sans, Literata</span>
-<span class="cm">  icons: Phosphor Icons (24 SVGs)</span>
-<span class="cm">  anim: GSAP ScrollTrigger</span>
-
-<span class="g">scout_designmd</span>
-<span class="cm">  DESIGN.md written (42 tokens)</span></div>
-          </div>
-        </div>
-
-        <div class="usage__item">
-          <div class="usage__text">
-            <div class="usage__name">BLEND MULTIPLE REFERENCES</div>
-            <div class="usage__desc">Capture three sites you like. Compare their patterns, pick the strongest elements from each, and generate a merged token set that Claude Code uses to write the page.</div>
-          </div>
-          <div class="term usage__term">
-            <div class="term__bar"><span class="term__dot term__dot--r"></span><span class="term__dot term__dot--y"></span><span class="term__dot term__dot--g"></span></div>
-            <div class="term__body"><span class="b">></span> Capture stripe.com, linear.app,
-   and resend.com. Compare them,
-   build a page with the best of each.
-
-<span class="g">scout_capture</span> <span class="cm">3 sites captured</span>
-<span class="g">scout_compare</span>
-<span class="cm">  common: sans display, dark hero</span>
-<span class="cm">  unique: stripe's gradient depth,</span>
-<span class="cm">          linear's density</span>
-
-<span class="g">scout_tokens</span> <span class="cm">format: tailwind</span>
-<span class="cm">  merged token set written</span></div>
-          </div>
-        </div>
-
-        <div class="usage__item">
-          <div class="usage__text">
-            <div class="usage__name">AUDIT BEFORE SHIPPING</div>
-            <div class="usage__desc">Run the detector against generated code. 14 rules check for overused fonts, pure grays, gradient text, em-dash density, and filler phrases. Nothing leaves the repo looking like a model wrote it.</div>
-          </div>
-          <div class="term usage__term">
-            <div class="term__bar"><span class="term__dot term__dot--r"></span><span class="term__dot term__dot--y"></span><span class="term__dot term__dot--g"></span></div>
-            <div class="term__body"><span class="b">></span> Audit src/app/page.tsx
-
-<span class="g">scout_audit</span> <span class="cm">src/app/page.tsx</span>
-
-<span class="r">warn</span> <span class="b">overused-font</span>
-<span class="cm">  "Inter" is on the monoculture list</span>
-<span class="r">warn</span> <span class="b">ai-copy-phrase</span>
-<span class="cm">  "seamlessly" is LLM filler</span>
-
-<span class="g">clean</span> <span class="cm">2 fixed, 0 remaining</span></div>
-          </div>
-        </div>
-
-        <div class="usage__item">
-          <div class="usage__text">
-            <div class="usage__name">PICK A DIRECTION</div>
-            <div class="usage__desc">After capturing, generate three design directions from the same source patterns. Each has its own token set. Choose one, then Claude Code builds from those exact values.</div>
-          </div>
-          <div class="term usage__term">
-            <div class="term__bar"><span class="term__dot term__dot--r"></span><span class="term__dot term__dot--y"></span><span class="term__dot term__dot--g"></span></div>
-            <div class="term__body"><span class="b">></span> Show me 3 styles from vercel.com
-
-<span class="g">scout_styles</span>
-
-<span class="y">Refined</span>
-<span class="cm">  bg: #fafafa  radius: 8px  spacing: 1.2x</span>
-<span class="y">Bold</span>
-<span class="cm">  bg: #0a0a0a  radius: 4px  spacing: 0.85x</span>
-<span class="y">Expressive</span>
-<span class="cm">  bg: #fafafa  radius: 16px  accent-led</span>
-
-<span class="b">></span> Go with Bold.</div>
-          </div>
-        </div>
-
+  <!-- ═══════════════ CAPABILITIES ═══════════════ -->
+  <section class="block tint" id="capabilities">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <span class="eyebrow">Capabilities</span>
+        <h2>Six things it does well</h2>
+        <p>Every step runs locally against a SQLite database in <code>~/.designscout</code>. No images leave your machine.</p>
       </div>
-    </div>
-  </div>
-
-  <!-- ────────────────── TOOLS ────────────────── -->
-  <div class="sec--mint" id="tools">
-    <div class="sec">
-      <h2 class="sec__h">TEN TOOLS</h2>
-      <div class="tools">
-        <div class="tool"><div class="tool__name">scout_capture</div><div class="tool__desc">Scrolls the full page, triggers lazy content, captures every section with 20% overlap. Reports coverage percentage.</div></div>
-        <div class="tool"><div class="tool__name">scout_analyze</div><div class="tool__desc">Returns screenshot paths for Claude Code to read with native vision. Includes the analysis schema.</div></div>
-        <div class="tool"><div class="tool__name">scout_store_patterns</div><div class="tool__desc">Saves color, type, layout, component, and mood patterns to the local SQLite database.</div></div>
-        <div class="tool"><div class="tool__name">scout_tokens</div><div class="tool__desc">Outputs JSON, CSS custom properties, or Tailwind config. Auto-tints grays, avoids overused fonts.</div></div>
-        <div class="tool"><div class="tool__name">scout_styles</div><div class="tool__desc">Three design directions from one capture: Refined, Bold, Expressive. Each with a complete token set.</div></div>
-        <div class="tool"><div class="tool__name">scout_audit</div><div class="tool__desc">14 deterministic rules for design slop, copy tells, and quality issues. No LLM, pure pattern matching.</div></div>
-        <div class="tool"><div class="tool__name">scout_designmd</div><div class="tool__desc">Generates an impeccable-compatible DESIGN.md from captured patterns. Readable by any AI coding tool.</div></div>
-        <div class="tool"><div class="tool__name">scout_search</div><div class="tool__desc">Queries the pattern database by keyword. Every capture builds the library.</div></div>
-        <div class="tool"><div class="tool__name">scout_compare</div><div class="tool__desc">Side-by-side analysis of multiple captured sites. Common patterns, unique elements, blended approach.</div></div>
-        <div class="tool"><div class="tool__name">scout_moodboard</div><div class="tool__desc">Renders an HTML mood board with screenshots, palettes, type analysis, and mood tags.</div></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ────────────────── WHAT CAPTURE GRABS ────────────────── -->
-  <div class="sec--dark">
-    <div class="sec">
-      <h2 class="sec__h">WHAT CAPTURE EXTRACTS</h2>
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2.5rem;">
-        <div>
-          <div style="font-family: 'Bebas Neue', cursive; font-size: 1.15rem; letter-spacing: 1px; color: var(--teal); margin-bottom: .6rem;">FROM THE DOM</div>
-          <p style="font-size: .8rem; line-height: 1.7; color: rgba(200,224,214,.5);">Computed colors on every visible element. Loaded fonts via the document.fonts API. Every unique font-size, weight, line-height, and letter-spacing in use. CSS custom properties on :root. Container max-widths, grid vs flex usage, and media query breakpoints. Sticky and fixed element counts.</p>
+      <div class="cap-grid">
+        <div class="card reveal">
+          <span class="card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 9h18M8 21h8"/></svg></span>
+          <h3>Capture</h3>
+          <p>Full-page screenshots at any viewport, or mobile, tablet, and desktop in one call. Scrolls to trigger lazy content, dismisses cookie banners, flags responsive breakage.</p>
         </div>
-        <div>
-          <div style="font-family: 'Bebas Neue', cursive; font-size: 1.15rem; letter-spacing: 1px; color: var(--teal); margin-bottom: .6rem;">ICONS AND ANIMATION</div>
-          <p style="font-size: .8rem; line-height: 1.7; color: rgba(200,224,214,.5);">Detects Font Awesome, Material Icons, Phosphor, Lucide, Remix, Tabler, Heroicons, Feather, and Bootstrap Icons. Counts inline SVGs with samples. Reads every @keyframes definition and which properties it animates. Detects GSAP, Framer Motion, Anime.js, Lenis, Locomotive, AOS, Three.js, Lottie, Motion One, and Barba.js. Flags scroll-triggered animations.</p>
+        <div class="card reveal">
+          <span class="card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 19V5M4 19h16M8 15l3-4 3 3 5-7"/></svg></span>
+          <h3>Extract</h3>
+          <p>Colours, type scale, fonts, icon sets, animation libraries, CSS variables, and breakpoints, pulled from the live DOM rather than guessed from a screenshot.</p>
+        </div>
+        <div class="card reveal">
+          <span class="card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>
+          <h3>Audit</h3>
+          <p>About 25 deterministic rules catch AI design tells and copy tells: overused fonts, cream palettes, gradient text, glassmorphism, em-dash density, filler phrases. No LLM in the loop.</p>
+        </div>
+        <div class="card reveal">
+          <span class="card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.5 5 5.5.8-4 3.9.9 5.5L12 21l-4.9-2.8.9-5.5-4-3.9L9.5 8z"/></svg></span>
+          <h3>Generate</h3>
+          <p>Design tokens in six formats, three distinct style directions, and audit-clean React or HTML components. Greys auto-tint toward the brand hue; font stacks skip the monoculture.</p>
+        </div>
+        <div class="card reveal">
+          <span class="card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg></span>
+          <h3>Crawl</h3>
+          <p>Walk a whole site, dedupe near-identical pages by structural fingerprint, and score cross-page consistency: font drift, palette spread, unstable nav and footer.</p>
+        </div>
+        <div class="card reveal">
+          <span class="card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg></span>
+          <h3>Inventory</h3>
+          <p>Component inventory straight from the DOM: buttons, inputs, cards, and badges grouped by variant, with computed styles and usage counts for each.</p>
         </div>
       </div>
     </div>
-  </div>
+  </section>
 
-  <!-- ────────────────── INSTALL ────────────────── -->
-  <div class="sec--mint" id="install">
-    <div class="sec">
-      <h2 class="sec__h">SETUP</h2>
-      <div class="install__code"><span class="cm"># clone</span>
+  <!-- ═══════════════ HOW IT WORKS ═══════════════ -->
+  <section class="block" id="how">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <span class="eyebrow">Pipeline</span>
+        <h2>From a URL to shippable code</h2>
+        <p>The server writes screenshots to disk and returns their paths. Claude Code opens the PNGs with its own vision. Token generation and auditing are plain code.</p>
+      </div>
+      <div class="pipeline">
+        <div class="step reveal">
+          <h3>Capture</h3>
+          <p>Playwright Chromium visits the site, scrolls it, and records every section plus the raw HTML.</p>
+          <span class="arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+        </div>
+        <div class="step reveal">
+          <h3>Analyze</h3>
+          <p>Claude reads the frames, fills the analysis schema, and stores structured patterns in SQLite.</p>
+          <span class="arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+        </div>
+        <div class="step reveal">
+          <h3>Generate</h3>
+          <p>Tokens, style directions, a DESIGN.md, or components come out of the stored patterns.</p>
+          <span class="arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+        </div>
+        <div class="step reveal">
+          <h3>Audit</h3>
+          <p>The detector checks the output. Clean means ship it; tells found means regenerate.</p>
+          <span class="arrow"></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════ TOOLS ═══════════════ -->
+  <section class="block tint" id="tools">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <span class="eyebrow">Tools</span>
+        <h2>Seventeen MCP tools</h2>
+        <p>Each one also has a matching CLI subcommand for scripting or piping context.</p>
+      </div>
+      <div class="tabs reveal" role="tablist" aria-label="Filter tools by category">
+        <button class="tab" role="tab" aria-selected="true" data-filter="all">All</button>
+        <button class="tab" role="tab" aria-selected="false" data-filter="capture">Capture</button>
+        <button class="tab" role="tab" aria-selected="false" data-filter="analyze">Analyze</button>
+        <button class="tab" role="tab" aria-selected="false" data-filter="generate">Generate</button>
+        <button class="tab" role="tab" aria-selected="false" data-filter="audit">Audit</button>
+        <button class="tab" role="tab" aria-selected="false" data-filter="manage">Manage</button>
+      </div>
+      <div class="tool-grid" id="toolGrid">
+        <div class="tool reveal" data-cat="capture"><span class="tool__cat">Capture</span><span class="tool__name">scout_capture</span><p>Visit a URL, scroll the full page, capture viewport frames. Responsive mode, selector-scoped capture, layout-breakage detection, cookie-banner dismissal. Persists the raw HTML.</p></div>
+        <div class="tool reveal" data-cat="capture"><span class="tool__cat">Capture</span><span class="tool__name">scout_crawl</span><p>Breadth-first crawl of a site's internal pages. Screenshot and design signals per page, near-duplicate pages deduped by structural fingerprint.</p></div>
+        <div class="tool reveal" data-cat="analyze"><span class="tool__cat">Analyze</span><span class="tool__name">scout_analyze</span><p>Return screenshot paths plus the analysis schema for Claude Code to fill in visually.</p></div>
+        <div class="tool reveal" data-cat="analyze"><span class="tool__cat">Analyze</span><span class="tool__name">scout_store_patterns</span><p>Save Claude Code's structured analysis (colour, type, layout, component, mood) to the local database.</p></div>
+        <div class="tool reveal" data-cat="analyze"><span class="tool__cat">Analyze</span><span class="tool__name">scout_search</span><p>Query the pattern database by keyword and category. Every capture adds to the library.</p></div>
+        <div class="tool reveal" data-cat="analyze"><span class="tool__cat">Analyze</span><span class="tool__name">scout_compare</span><p>Screenshot paths and patterns for two or more captured sites, side by side.</p></div>
+        <div class="tool reveal" data-cat="analyze"><span class="tool__cat">Analyze</span><span class="tool__name">scout_inventory</span><p>Component inventory from the live DOM: buttons, inputs, cards, badges grouped by variant with computed styles and counts.</p></div>
+        <div class="tool reveal" data-cat="generate"><span class="tool__cat">Generate</span><span class="tool__name">scout_tokens</span><p>Generate tokens as json, css, tailwind, style-dictionary, w3c (DTCG), or figma (Tokens Studio).</p></div>
+        <div class="tool reveal" data-cat="generate"><span class="tool__cat">Generate</span><span class="tool__name">scout_styles</span><p>Three design directions, Refined, Bold, and Expressive, each with its own complete token set.</p></div>
+        <div class="tool reveal" data-cat="generate"><span class="tool__cat">Generate</span><span class="tool__name">scout_codegen</span><p>Scaffold hero, navbar, card, footer, features, testimonials, cta, or pricing as React or HTML from a token set. Pre-checked against the audit rules.</p></div>
+        <div class="tool reveal" data-cat="generate"><span class="tool__cat">Generate</span><span class="tool__name">scout_moodboard</span><p>Build an HTML mood board from captured sites: screenshots, palettes, type analysis, mood tags.</p></div>
+        <div class="tool reveal" data-cat="generate"><span class="tool__cat">Generate</span><span class="tool__name">scout_designmd</span><p>Generate an impeccable-compatible DESIGN.md that any AI coding tool can read and enforce.</p></div>
+        <div class="tool reveal" data-cat="audit"><span class="tool__cat">Audit</span><span class="tool__name">scout_audit</span><p>Anti-pattern detection on a file, raw text, or a captured site (real HTML plus extracted styles and tokens).</p></div>
+        <div class="tool reveal" data-cat="audit"><span class="tool__cat">Audit</span><span class="tool__name">scout_a11y</span><p>Deterministic accessibility scan: alt text, control names, labels, heading order, landmarks, focus rings, with a 0 to 100 score.</p></div>
+        <div class="tool reveal" data-cat="audit"><span class="tool__cat">Audit</span><span class="tool__name">scout_consistency</span><p>Cross-page consistency report from a crawl: font drift, palette spread, unstable nav and footer, with a score and an HTML report.</p></div>
+        <div class="tool reveal" data-cat="manage"><span class="tool__cat">Manage</span><span class="tool__name">scout_list</span><p>List captured sites and crawls held in the local database.</p></div>
+        <div class="tool reveal" data-cat="manage"><span class="tool__cat">Manage</span><span class="tool__name">scout_delete</span><p>Remove a captured site or crawl, along with its screenshots and outputs.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════ DETECTION ═══════════════ -->
+  <section class="block" id="detection">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <span class="eyebrow">Anti-pattern detection</span>
+        <h2>What the audit catches</h2>
+        <p>Point <code>scout_audit</code> at a file, raw text, or a captured site. Rules run across three categories with no model involved.</p>
+      </div>
+      <div class="detect-grid">
+        <div class="detect reveal">
+          <h3>Design slop <span class="tag">slop</span></h3>
+          <div class="chips">
+            <span class="chip">Overused fonts</span><span class="chip">Cream surfaces</span><span class="chip">Purple palettes</span>
+            <span class="chip">Tailwind defaults</span><span class="chip">Gradient text</span><span class="chip">Glow shadows</span>
+            <span class="chip">Radial halos</span><span class="chip">Overshoot easing</span><span class="chip">Glassmorphism</span>
+            <span class="chip">Stacked 100vh</span><span class="chip">Uniform rounded-xl</span><span class="chip">Emoji headings</span>
+            <span class="chip">Icon tile above heading</span><span class="chip">Staggered scroll reveals</span>
+          </div>
+        </div>
+        <div class="detect reveal">
+          <h3>Copy tells <span class="tag">copy</span></h3>
+          <div class="chips">
+            <span class="chip">Em-dash overuse</span><span class="chip">Exclamation density</span><span class="chip">Ellipsis overuse</span>
+            <span class="chip">Label: header pattern</span><span class="chip">Trailing arrows</span><span class="chip">Template metrics</span>
+            <span class="chip">Template testimonials</span><span class="chip">30+ filler phrases</span>
+          </div>
+        </div>
+        <div class="detect reveal">
+          <h3>Quality <span class="tag">quality</span></h3>
+          <div class="chips">
+            <span class="chip">Untinted greys</span><span class="chip">Pure black</span><span class="chip">Grey text on colour</span>
+            <span class="chip">WCAG AA contrast</span><span class="chip">Too many typefaces</span><span class="chip">Too many pinned elements</span>
+            <span class="chip">Multiple animation libraries</span>
+          </div>
+        </div>
+      </div>
+      <p class="setup-note">DesignScout uses <a href="https://github.com/pbakaus/impeccable" target="_blank" rel="noopener" style="color:var(--primary-strong);font-weight:600;">impeccable</a> for design-quality enforcement. Its own generated components and default token set pass the same audit.</p>
+    </div>
+  </section>
+
+  <!-- ═══════════════ TOKEN FORMATS ═══════════════ -->
+  <section class="block tint">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <span class="eyebrow">Token formats</span>
+        <h2>Six ways to export</h2>
+      </div>
+      <div class="reveal" style="overflow-x:auto;">
+        <table class="formats">
+          <thead><tr><th>Format</th><th>Output</th></tr></thead>
+          <tbody>
+            <tr><td>json</td><td>The raw DesignTokenSet</td></tr>
+            <tr><td>css</td><td>:root custom properties for colour, font, space, radius, and shadow</td></tr>
+            <tr><td>tailwind</td><td>A tailwind.config theme.extend object</td></tr>
+            <tr><td>style-dictionary</td><td>Style Dictionary v3 source with value leaves</td></tr>
+            <tr><td>w3c</td><td>W3C Design Tokens Community Group format ($type and $value)</td></tr>
+            <tr><td>figma</td><td>Tokens Studio for Figma, single global set</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════ SETUP ═══════════════ -->
+  <section class="block" id="setup">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <span class="eyebrow">Setup</span>
+        <h2>Running in four steps</h2>
+        <p>You need Node 20 or newer, Claude Code, and about 400 MB of disk for the bundled Chromium.</p>
+      </div>
+      <div class="setup-grid">
+        <div class="setup-step reveal">
+          <span class="k">01</span>
+          <h3>Clone and build</h3>
+          <div class="code"><button class="copy" type="button" aria-label="Copy" data-copy="git clone https://github.com/SpenceChakabva/designscout.git
+cd designscout
+npm install
+npm run build"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button><span class="cm"># clone the repo</span>
 git clone https://github.com/SpenceChakabva/designscout.git
 cd designscout
-
-<span class="cm"># dependencies</span>
 npm install
-npx playwright install chromium
-
-<span class="cm"># build</span>
-npm run build
-
-<span class="cm"># register globally with Claude Code</span>
-claude mcp add designscout -s user -- node dist/index.js</div>
-      <p class="install__note" style="color: var(--ink-3);">Restart Claude Code after registering. Run /mcp to verify. Then ask it to capture a site.</p>
+npm run build</div>
+        </div>
+        <div class="setup-step reveal">
+          <span class="k">02</span>
+          <h3>Install the browser</h3>
+          <div class="code"><button class="copy" type="button" aria-label="Copy" data-copy="npx playwright install chromium"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button><span class="cm"># bundled Chromium for Playwright</span>
+npx playwright install chromium</div>
+        </div>
+        <div class="setup-step reveal">
+          <span class="k">03</span>
+          <h3>Register with Claude Code</h3>
+          <div class="code"><button class="copy" type="button" aria-label="Copy" data-copy="claude mcp add designscout -s user -- node /ABSOLUTE/PATH/TO/designscout/dist/index.js"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button><span class="cm"># -s user makes it available in every project</span>
+claude mcp add designscout -s user -- \
+  node /ABSOLUTE/PATH/TO/designscout/dist/index.js</div>
+        </div>
+        <div class="setup-step reveal">
+          <span class="k">04</span>
+          <h3>Verify</h3>
+          <div class="code"><button class="copy" type="button" aria-label="Copy" data-copy="/mcp"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button><span class="cm"># restart Claude Code, then run</span>
+/mcp
+<span class="cm"># designscout shows connected with 17 tools</span></div>
+        </div>
+      </div>
+      <p class="setup-note">On Windows PowerShell, use the full path with forward slashes, for example <code>node C:/Users/you/designscout/dist/index.js</code>. To update later: <code>git pull &amp;&amp; npm install &amp;&amp; npm run build</code>, then reconnect from <code>/mcp</code>.</p>
     </div>
-  </div>
+  </section>
 
-  <!-- ────────────────── CTA ────────────────── -->
-  <div class="cta"><div class="cta__inner">
-    <h2 class="cta__h">START SCOUTING</h2>
-    <p class="cta__p">Open source. MIT licensed. Captures real design from real sites.</p>
-    <a href="https://github.com/SpenceChakabva/designscout" target="_blank" rel="noopener" class="btn btn--white">View on GitHub</a>
-  </div></div>
-
-  <!-- ────────────────── FOOTER ────────────────── -->
-  <footer class="ft"><div class="ft__inner">
-    <div class="ft__brand"><span class="d"></span> DesignScout</div>
-    <div class="ft__links">
-      <a href="https://github.com/SpenceChakabva/designscout" target="_blank" rel="noopener">GitHub</a>
-      <a href="https://github.com/SpenceChakabva" target="_blank" rel="noopener">Spencer Chakabva</a>
-      <a href="LICENSE">MIT</a>
+  <!-- ═══════════════ CTA ═══════════════ -->
+  <section class="block tint">
+    <div class="wrap">
+      <div class="cta-box reveal">
+        <h2>Start scouting</h2>
+        <p>Open source, MIT licensed, and built to keep AI output from looking like AI output.</p>
+        <div class="cta-actions">
+          <a href="#setup" class="btn btn--primary">Install DesignScout</a>
+          <a href="https://github.com/SpenceChakabva/designscout" target="_blank" rel="noopener" class="btn btn--ghost">Read the docs</a>
+        </div>
+      </div>
     </div>
-  </div></footer>
+  </section>
+
+  <footer>
+    <div class="wrap foot">
+      <a href="#top" class="brand"><span class="mark"></span> DesignScout</a>
+      <div class="foot-links">
+        <a href="https://github.com/SpenceChakabva/designscout" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/SpenceChakabva" target="_blank" rel="noopener">Spencer Chakabva</a>
+        <a href="https://github.com/SpenceChakabva/designscout/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>
+      </div>
+    </div>
+  </footer>
 
   <script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  (function () {
+    var root = document.documentElement;
 
-    // ── Three.js wireframe ──
-    const canvas = document.getElementById('hero-gl');
-    if (canvas && !reduced) {
-      const r = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
-      const box = canvas.parentElement.getBoundingClientRect();
-      r.setSize(box.width + 40, box.height + 40);
-      r.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-      const s = new THREE.Scene();
-      const c = new THREE.PerspectiveCamera(50, (box.width + 40) / (box.height + 40), .1, 100);
-      c.position.z = 4.5;
-      const geo = new THREE.IcosahedronGeometry(1.6, 1);
-      const mat = new THREE.MeshBasicMaterial({ color: 0x0D7C5F, wireframe: true, transparent: true, opacity: .14 });
-      const m = new THREE.Mesh(geo, mat);
-      s.add(m);
-      (function tick() { requestAnimationFrame(tick); m.rotation.x += .0015; m.rotation.y += .002; r.render(s, c); })();
-      window.addEventListener('resize', () => {
-        const b = canvas.parentElement.getBoundingClientRect();
-        r.setSize(b.width + 40, b.height + 40);
-        c.aspect = (b.width + 40) / (b.height + 40);
-        c.updateProjectionMatrix();
-      });
+    /* ── Theme (initial value already applied by the head script) ── */
+    function currentTheme() {
+      var attr = root.getAttribute('data-theme');
+      if (attr === 'dark' || attr === 'light') return attr;
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     }
+    var toggle = document.getElementById('themeToggle');
+    toggle.addEventListener('click', function () {
+      var next = currentTheme() === 'dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      try { localStorage.setItem('ds-theme', next); } catch (e) {}
+    });
 
-    // ── GSAP ──
-    if (typeof gsap !== 'undefined' && !reduced) {
-      gsap.registerPlugin(ScrollTrigger);
+    /* ── Header shadow on scroll ── */
+    var header = document.getElementById('header');
+    var onScroll = function () { header.classList.toggle('scrolled', window.scrollY > 8); };
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
 
-      // Hero
-      gsap.from('.hero > div:first-child', { y: 35, opacity: 0, duration: .7, delay: .1, ease: 'power3.out' });
-      gsap.from('.hero__visual', { y: 25, opacity: 0, duration: .7, delay: .3, ease: 'power3.out' });
-
-      // Terminal lines
-      gsap.to('.hero .term__line', { opacity: 1, duration: .1, stagger: .1, delay: .8, ease: 'none' });
-
-      // Usage items
-      document.querySelectorAll('.usage__item').forEach((el, i) => {
-        gsap.from(el, {
-          scrollTrigger: { trigger: el, start: 'top 82%' },
-          y: 30, opacity: 0, duration: .6, delay: i * .04, ease: 'power3.out',
-        });
-      });
-
-      // Tools
-      gsap.from('.tool', {
-        scrollTrigger: { trigger: '.tools', start: 'top 80%' },
-        y: 20, opacity: 0, duration: .4, stagger: .05, ease: 'power2.out',
-      });
-
-      // Section headings
-      document.querySelectorAll('.sec__h').forEach(h => {
-        gsap.from(h, {
-          scrollTrigger: { trigger: h, start: 'top 82%' },
-          y: 25, opacity: 0, duration: .55, ease: 'power3.out',
-        });
-      });
-
-      // CTA
-      gsap.from('.cta__h', {
-        scrollTrigger: { trigger: '.cta', start: 'top 75%' },
-        scale: .94, opacity: 0, duration: .6, ease: 'power3.out',
-      });
-
-      // Install
-      gsap.from('.install__code', {
-        scrollTrigger: { trigger: '.install__code', start: 'top 85%' },
-        y: 20, opacity: 0, duration: .5, ease: 'power3.out',
-      });
+    /* ── Scroll reveal ── */
+    var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var reveals = document.querySelectorAll('.reveal');
+    if (reduced || !('IntersectionObserver' in window)) {
+      reveals.forEach(function (el) { el.classList.add('in'); });
     } else {
-      document.querySelectorAll('.term__line').forEach(el => el.style.opacity = '1');
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting) return;
+          var el = entry.target;
+          var siblings = Array.prototype.slice.call(el.parentElement.children).filter(function (c) {
+            return c.classList.contains('reveal');
+          });
+          var idx = siblings.indexOf(el);
+          el.style.transitionDelay = Math.min(idx, 6) * 60 + 'ms';
+          el.classList.add('in');
+          io.unobserve(el);
+        });
+      }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
+      reveals.forEach(function (el) { io.observe(el); });
     }
-  });
+
+    /* ── Terminal line-by-line ── */
+    var termLines = document.querySelectorAll('#term .line');
+    if (reduced) {
+      termLines.forEach(function (l) { l.style.opacity = 1; l.style.transform = 'none'; });
+    } else {
+      var term = document.getElementById('term');
+      var played = false;
+      var tio = new IntersectionObserver(function (entries) {
+        if (played || !entries[0].isIntersecting) return;
+        played = true;
+        termLines.forEach(function (l, i) {
+          setTimeout(function () {
+            l.style.transition = 'opacity .25s ease, transform .25s ease';
+            l.style.opacity = 1;
+            l.style.transform = 'none';
+          }, 500 + i * 120);
+        });
+      }, { threshold: 0.4 });
+      tio.observe(term);
+    }
+
+    /* ── Tool filter ── */
+    var tabs = document.querySelectorAll('.tab');
+    var tools = document.querySelectorAll('#toolGrid .tool');
+    tabs.forEach(function (tab) {
+      tab.addEventListener('click', function () {
+        tabs.forEach(function (t) { t.setAttribute('aria-selected', 'false'); });
+        tab.setAttribute('aria-selected', 'true');
+        var f = tab.getAttribute('data-filter');
+        tools.forEach(function (tool) {
+          var show = f === 'all' || tool.getAttribute('data-cat') === f;
+          tool.classList.toggle('hidden', !show);
+        });
+      });
+    });
+
+    /* ── Copy buttons ── */
+    document.querySelectorAll('.copy').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var text = btn.getAttribute('data-copy') || '';
+        var done = function () {
+          btn.classList.add('copied');
+          btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>';
+          setTimeout(function () {
+            btn.classList.remove('copied');
+            btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
+          }, 1600);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(done).catch(function () {});
+        }
+      });
+    });
+  })();
   </script>
 </body>
 </html>
