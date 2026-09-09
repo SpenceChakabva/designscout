@@ -64,7 +64,14 @@ export function buildMoodBoardEntry(
   };
 }
 
+// Embedding every full-page screenshot as base64 can build a multi-hundred-MB
+// string and OOM the server. Bound it: per-image and total budgets, with a
+// file:// fallback past the limit.
+const MAX_EMBED_BYTES_PER_IMAGE = 2_000_000;
+const MAX_EMBED_BYTES_TOTAL = 28_000_000;
+
 function renderMoodBoardHtml(board: MoodBoard): string {
+  let embeddedBytes = 0;
   const entriesHtml = board.entries.map((entry, i) => {
     const colors = entry.analysis.colors || {};
     const swatches = Object.entries(colors)
@@ -77,9 +84,15 @@ function renderMoodBoardHtml(board: MoodBoard): string {
 
     const screenshots = entry.screenshotPaths
       .map(p => {
-        // Convert absolute path to data URI for portability
+        // Convert absolute path to data URI for portability, within budget.
         try {
+          const { size } = fs.statSync(p);
+          if (size > MAX_EMBED_BYTES_PER_IMAGE || embeddedBytes + size > MAX_EMBED_BYTES_TOTAL) {
+            const href = 'file://' + p.replace(/\\/g, '/');
+            return `<img src="${href}" class="screenshot" loading="lazy" title="linked (too large to embed)" />`;
+          }
           const data = fs.readFileSync(p);
+          embeddedBytes += size;
           const b64 = data.toString('base64');
           return `<img src="data:image/png;base64,${b64}" class="screenshot" loading="lazy" />`;
         } catch {

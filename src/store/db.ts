@@ -5,14 +5,24 @@ import { dbPath } from '../shared/config.js';
 let _db: Database.Database | null = null;
 
 export function getDb(config: DesignScoutConfig): Database.Database {
-  if (_db) return _db;
+  if (_db && _db.open) return _db;
+  _db = null;
 
-  _db = new Database(dbPath(config));
-  _db.pragma('journal_mode = WAL');
-  _db.pragma('foreign_keys = ON');
-
-  migrate(_db);
-  return _db;
+  let lastErr: unknown;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const db = new Database(dbPath(config));
+      db.pragma('journal_mode = WAL');
+      db.pragma('foreign_keys = ON');
+      db.pragma('busy_timeout = 4000');
+      migrate(db);
+      _db = db;
+      return _db;
+    } catch (err) {
+      lastErr = err;
+    }
+  }
+  throw new Error(`Could not open the DesignScout database at ${dbPath(config)}: ${(lastErr as Error)?.message}`);
 }
 
 const SCHEMA_VERSION = 2;

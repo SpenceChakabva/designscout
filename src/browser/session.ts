@@ -5,11 +5,29 @@ const UA = 'DesignScout/0.2 (design-research-agent; +https://github.com/SpenceCh
 
 /** Run a callback with a fresh headless Chromium browser, always closed afterward. */
 export async function withBrowser<T>(fn: (browser: Browser) => Promise<T>): Promise<T> {
-  const browser = await chromium.launch({ headless: true });
+  let browser: Browser;
+  try {
+    browser = await chromium.launch({
+      headless: true,
+      // Lower the memory / shared-memory footprint of long multi-capture sessions.
+      // /dev/shm is small in many containers and its exhaustion crashes the tab.
+      args: ['--disable-dev-shm-usage', '--disable-gpu', '--no-zygote'],
+    });
+  } catch (err) {
+    throw new Error(
+      `Could not launch headless Chromium: ${(err as Error).message}. ` +
+      `Run "npx playwright install chromium" in the DesignScout directory.`,
+    );
+  }
   try {
     return await fn(browser);
   } finally {
-    await browser.close();
+    // Never let a failed teardown surface as the tool's result, and never let a
+    // hung close() wedge the process — bound it and move on.
+    await Promise.race([
+      browser.close().catch(() => {}),
+      new Promise<void>(resolve => setTimeout(resolve, 5000)),
+    ]);
   }
 }
 

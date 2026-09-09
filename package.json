@@ -1,7 +1,7 @@
 {
   "name": "designscout",
-  "version": "0.2.0",
-  "description": "Design research agent — browse, capture, analyze, audit, and generate from site designs with Claude Code",
+  "version": "0.3.0",
+  "description": "Design research agent — browse, capture, analyze, audit, generate, and verify site designs with Claude Code",
   "type": "module",
   "main": "dist/index.js",
   "engines": {

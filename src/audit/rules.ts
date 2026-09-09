@@ -977,5 +977,27 @@ export function auditMarkup(content: string): Finding[] {
     fonts: [...new Set(fonts)],
   }));
 
+  // Full-document hygiene — the "single biggest fix" in the v0.2 build feedback
+  // was a missing <meta name="viewport">; a missing lang is close behind.
+  const isFullDoc = /<html[\s>]/i.test(content) || /<!doctype\s+html/i.test(content);
+  if (isFullDoc) {
+    if (!/<meta[^>]+name=["']viewport["']/i.test(content)) {
+      findings.push({
+        ruleId: 'viewport-meta-missing', category: 'quality', severity: 'error',
+        name: 'Missing viewport meta',
+        description: 'No <meta name="viewport">. The page will not lay out responsively on mobile — content renders at desktop width and is zoomed out.',
+        fix: 'Add <meta name="viewport" content="width=device-width, initial-scale=1"> to <head>.',
+      });
+    }
+    if (!/<html[^>]+\blang=/i.test(content)) {
+      findings.push({
+        ruleId: 'html-lang-missing', category: 'quality', severity: 'warning',
+        name: 'Missing lang attribute',
+        description: 'The <html> element has no lang attribute — assistive tech cannot pick the right pronunciation rules.',
+        fix: 'Add lang="en" (or the correct language) to the <html> element.',
+      });
+    }
+  }
+
   return findings;
 }

@@ -4,8 +4,8 @@
 
 <p align="center">
   <img alt="MCP server" src="https://img.shields.io/badge/MCP-server-0D7C5F?style=flat-square">
-  <img alt="17 tools" src="https://img.shields.io/badge/tools-17-F5C842?style=flat-square&labelColor=0C1A16">
-  <img alt="tests passing" src="https://img.shields.io/badge/tests-43_passing-0D7C5F?style=flat-square">
+  <img alt="23 tools" src="https://img.shields.io/badge/tools-23-F5C842?style=flat-square&labelColor=0C1A16">
+  <img alt="tests passing" src="https://img.shields.io/badge/tests-89_passing-0D7C5F?style=flat-square">
   <img alt="node >= 20" src="https://img.shields.io/badge/node-%E2%89%A5%2020-0C1A16?style=flat-square">
   <img alt="no API keys" src="https://img.shields.io/badge/API_keys-none-D93B3B?style=flat-square">
   <img alt="MIT license" src="https://img.shields.io/badge/license-MIT-1E6FD9?style=flat-square">
@@ -39,7 +39,8 @@ so that what you ship reads as designed by a person.
 | **Capture** | Full-page screenshots at any viewport — or all three (mobile / tablet / desktop) in one call. Detects responsive breakage. Claude Code reads the images with its own vision. |
 | **Extract** | Colours, type scale, fonts, icon sets, animation libraries, CSS variables, breakpoints — pulled straight from the live DOM, not guessed. |
 | **Audit** | ~25 deterministic rules catch AI design tells (overused fonts, purple/cream palettes, gradient text, glassmorphism, icon-tile headings) and copy tells (em-dash density, filler phrases). No LLM. |
-| **Generate** | Design tokens in 6 formats, three distinct style directions, and audit-clean React / HTML components. Greys auto-tint toward the brand hue; font stacks avoid the monoculture. |
+| **Generate** | Design tokens in 6 formats, three distinct style directions, audit-clean React / HTML components, and a guarded scroll-animation layer. Greys auto-tint toward the brand hue; font stacks avoid the monoculture. |
+| **Verify** | Render the code you generated at mobile / tablet / desktop and report what breaks — horizontal overflow, tap-target size, missing viewport meta, broken images, console errors, WCAG contrast in light *and* dark. |
 | **Crawl** | Walk a whole site, dedupe near-identical pages, and score cross-page consistency — font drift, palette spread, unstable nav. |
 
 No API keys. Everything runs locally against a SQLite database in `~/.designscout/`.
@@ -61,8 +62,11 @@ flowchart LR
   DB --> G[scout_codegen]
   DB --> M[scout_moodboard]
   T & G --> Q{scout_audit}
-  Q -->|clean| OUT[Ship it]
   Q -->|AI tells found| G
+  Q -->|clean| V{scout_verify + scout_contrast}
+  V -->|breaks on mobile / fails WCAG| G
+  V -->|clean| B[scout_bundle]
+  B --> OUT[Ship it]
 ```
 
 The MCP server never sends images over the wire. `scout_capture` writes PNGs to disk and
@@ -136,7 +140,7 @@ Restart Claude Code (or run `/mcp` → reconnect), then:
 /mcp
 ```
 
-`designscout` should show **connected** with **17 tools**. If it says *failed*, run
+`designscout` should show **connected** with **23 tools**. If it says *failed*, run
 `claude --debug` and check the stderr — the [troubleshooting](#troubleshooting) section
 covers the usual causes.
 
@@ -161,11 +165,17 @@ so a rebuild is all it takes.
 | `scout_search` | Query the pattern database by keyword and category. |
 | `scout_tokens` | Generate tokens: `json`, `css`, `tailwind`, `style-dictionary`, `w3c` (DTCG), `figma` (Tokens Studio). |
 | `scout_styles` | Three design directions — Refined, Bold, Expressive — each with its own token set. |
-| `scout_codegen` | Scaffold a component (`hero`, `navbar`, `card`, `footer`, `features`, `testimonials`, `cta`, `pricing`) as React or HTML from a token set. Pre-checked against the audit rules. |
+| `scout_codegen` | Scaffold a component (`hero`, `navbar`, `card`, `footer`, `features`, `testimonials`, `cta`, `pricing`) as React or HTML from a token set. Runs the audit rules on its own output and reports the result. |
+| `scout_checklist` | Pre-generation checklist for a captured site — turns imagery, motion, forms, theming, responsive coverage, fonts, and bundling into explicit decisions, each seeded from what the reference actually does. |
 | `scout_moodboard` | Build a neubrutalist HTML mood board from captured sites. |
 | `scout_compare` | Screenshot paths + patterns for two or more sites, side by side. |
-| `scout_audit` | Anti-pattern detection on a file, raw text, or a captured site (real HTML + extracted styles + tokens). |
+| `scout_motion` | Emit a guarded scroll-animation layer (CSS + JS) — reveal, parallax, line-mask, count-up, marquee, magnetic, blur-in, optional View Transitions theme swap — as dependency-free vanilla JS or GSAP 3 + ScrollTrigger (+ Lenis). Hard-bails under `prefers-reduced-motion`. |
+| `scout_bundle` | Make a built HTML file self-contained and CSP/sandbox-safe: inline remote images as `data:` URIs and allowlisted CDN `<script>`/`<style>`, add missing charset/viewport meta. |
+| `scout_deps` | Resolve exact pinned versions and ready-to-paste `<script src>` URLs for CDN libraries — cdnjs, then jsDelivr. |
+| `scout_audit` | Anti-pattern detection on a file, raw text, or a captured site (real HTML + extracted styles + tokens). Now also flags a missing `<meta viewport>` / `<html lang>` on full documents. |
 | `scout_a11y` | Deterministic accessibility scan — alt text, control names, labels, heading order, landmarks, focus rings — with a 0–100 score. |
+| `scout_verify` | Render generated HTML — a file, a string, or a URL — in headless Chromium at mobile/tablet/desktop and report what breaks: horizontal overflow with the offending elements, sub-44px tap targets, sub-12px text, missing meta, broken images, console errors, inline-script syntax errors, AI design-tell lint. |
+| `scout_contrast` | WCAG 2.1 contrast for a single pair, a CSS file, or a whole token set — token mode runs a light + dark theme-pair report so a combo that passes one theme but fails the other is caught. Returns exact ratios and a lightness-nudged fix per failure. |
 | `scout_inventory` | Component inventory from the live DOM: buttons, inputs, cards, badges grouped by variant with computed styles and counts. |
 | `scout_designmd` | Generate an [impeccable](https://github.com/pbakaus/impeccable)-compatible `DESIGN.md`. |
 | `scout_crawl` | Breadth-first crawl of a site's internal pages, screenshot + design signals per page, near-duplicate pages deduped. |

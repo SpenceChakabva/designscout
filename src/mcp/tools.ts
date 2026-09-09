@@ -687,6 +687,11 @@ export async function handleCodegen(
 
   const result = generateComponent(component, framework, tokens, patterns, args.brief);
 
+  // Actually self-audit the output — the README promises codegen is "pre-checked
+  // against the AI-tell rules", so run them and report, not just hand-avoid.
+  const selfAudit = auditMarkup(result.code);
+  const auditClean = selfAudit.length === 0;
+
   let written: string | undefined;
   if (args.output_path) {
     try { fs.writeFileSync(args.output_path, result.code, 'utf-8'); written = args.output_path; } catch { /* return inline */ }
@@ -700,7 +705,14 @@ export async function handleCodegen(
     outputPath: written,
     code: result.code,
     usedDefaultTokens: usedDefault,
-    message: `Generated ${component} (${framework})${usedDefault ? ' using DesignScout\'s default token set (no captured site found)' : ''}. ${written ? `Written to ${written}.` : 'Returned inline.'}`,
+    auditClean,
+    auditFindings: selfAudit.map(f => ({
+      rule: f.ruleId, category: f.category, severity: f.severity, name: f.name, description: f.description, fix: f.fix,
+    })),
+    message:
+      `Generated ${component} (${framework})${usedDefault ? ' using DesignScout\'s default token set (no captured site found)' : ''}. ` +
+      `${written ? `Written to ${written}. ` : 'Returned inline. '}` +
+      `Self-audit: ${auditClean ? 'clean, 0 tells.' : `${selfAudit.length} finding(s) — review auditFindings.`}`,
   });
 }
 

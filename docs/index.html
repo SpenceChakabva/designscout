@@ -32,7 +32,7 @@
   <meta property="og:image:type" content="image/png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
-  <meta property="og:image:alt" content="DesignScout: build from real design, not a model's guess. An MCP server for Claude Code — 17 MCP tools, ~25 audit rules, 0 API keys, MIT licensed." />
+  <meta property="og:image:alt" content="DesignScout: build from real design, not a model's guess. An MCP server for Claude Code — 23 MCP tools, ~27 audit rules, 0 API keys, MIT licensed." />
   <meta property="og:locale" content="en_US" />
 
   <!-- ── Twitter / X ── -->
@@ -40,7 +40,7 @@
   <meta name="twitter:title" content="DesignScout — build from real design, not a model's guess" />
   <meta name="twitter:description" content="An MCP server for Claude Code. Capture live websites, extract their design system into local tokens, and audit generated code so nothing ships looking machine-made." />
   <meta name="twitter:image" content="https://designscout.spencerchakabva.dev/og-cover.png" />
-  <meta name="twitter:image:alt" content="DesignScout: build from real design, not a model's guess. An MCP server for Claude Code — 17 MCP tools, ~25 audit rules, 0 API keys, MIT licensed." />
+  <meta name="twitter:image:alt" content="DesignScout: build from real design, not a model's guess. An MCP server for Claude Code — 23 MCP tools, ~27 audit rules, 0 API keys, MIT licensed." />
 
   <!-- ── Structured data ── -->
   <script type="application/ld+json">
@@ -55,7 +55,7 @@
         "operatingSystem": "macOS, Linux, Windows",
         "description": "An MCP server for Claude Code that captures live websites, extracts their design system into local tokens, and audits generated code for AI design tells.",
         "license": "https://github.com/SpenceChakabva/designscout/blob/main/LICENSE",
-        "softwareVersion": "0.2",
+        "softwareVersion": "0.3",
         "author": {
           "@type": "Person",
           "name": "Spencer Chakabva",
@@ -312,7 +312,7 @@
     .card p { font-size: .9rem; color: var(--muted-foreground); }
 
     /* ── Pipeline ── */
-    .pipeline { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; counter-reset: step; }
+    .pipeline { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; counter-reset: step; }
     .step {
       background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
       padding: 20px; position: relative;
@@ -513,8 +513,8 @@
           <a href="https://github.com/SpenceChakabva/designscout" target="_blank" rel="noopener" class="btn btn--ghost">View source</a>
         </div>
         <div class="hero-meta">
-          <div><span class="n">17</span><span class="l">MCP tools</span></div>
-          <div><span class="n">~25</span><span class="l">audit rules</span></div>
+          <div><span class="n">23</span><span class="l">MCP tools</span></div>
+          <div><span class="n">~27</span><span class="l">audit rules</span></div>
           <div><span class="n">0</span><span class="l">API keys</span></div>
           <div><span class="n">MIT</span><span class="l">licensed</span></div>
         </div>
@@ -537,8 +537,10 @@
 <div class="line"><span class="ok">Bold</span>       <span class="dim">dark, saturated, tight grid</span></div>
 <div class="line"><span class="ok">Expressive</span> <span class="dim">accent led, rounded</span></div>
 <div class="line">&nbsp;</div>
-<div class="line"><span class="prompt">&gt;</span> Go with Bold, then audit it</div>
+<div class="line"><span class="prompt">&gt;</span> Go with Bold, then make sure it ships clean</div>
 <div class="line"><span class="cmd">scout_audit</span> <span class="ok">clean, 0 tells</span></div>
+<div class="line"><span class="cmd">scout_verify</span> <span class="dim">360 / 768 / 1440</span> <span class="ok">no overflow</span></div>
+<div class="line"><span class="cmd">scout_contrast</span> <span class="ok">AA — light + dark</span></div>
         </div>
       </div>
     </div>
@@ -549,7 +551,7 @@
     <div class="wrap">
       <div class="section-head reveal">
         <span class="eyebrow">Capabilities</span>
-        <h2>Six things it does well</h2>
+        <h2>Eight things it does well</h2>
         <p>Every step runs locally against a SQLite database in <code>~/.designscout</code>. No images leave your machine.</p>
       </div>
       <div class="cap-grid">
@@ -566,7 +568,7 @@
         <div class="card reveal">
           <span class="card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>
           <h3>Audit</h3>
-          <p>About 25 deterministic rules catch AI design tells and copy tells: overused fonts, cream palettes, gradient text, glassmorphism, em-dash density, filler phrases. No LLM in the loop.</p>
+          <p>About 27 deterministic rules catch AI design tells and copy tells: overused fonts, cream palettes, gradient text, glassmorphism, em-dash density, filler phrases. No LLM in the loop.</p>
         </div>
         <div class="card reveal">
           <span class="card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.5 5 5.5.8-4 3.9.9 5.5L12 21l-4.9-2.8.9-5.5-4-3.9L9.5 8z"/></svg></span>
@@ -582,6 +584,16 @@
           <span class="card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg></span>
           <h3>Inventory</h3>
           <p>Component inventory straight from the DOM: buttons, inputs, cards, and badges grouped by variant, with computed styles and usage counts for each.</p>
+        </div>
+        <div class="card reveal">
+          <span class="card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4M9 10l2 2 4-4"/></svg></span>
+          <h3>Verify</h3>
+          <p>Render the code you just generated at mobile, tablet, and desktop. Reports horizontal overflow with the offending elements, sub-44px tap targets, missing viewport meta, broken images, console errors, and inline-script syntax.</p>
+        </div>
+        <div class="card reveal">
+          <span class="card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5zM3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg></span>
+          <h3>Ship</h3>
+          <p>Check WCAG contrast in light <em>and</em> dark, emit a guarded scroll-animation layer, resolve exact CDN versions, then inline every asset into one self-contained file that opens with no network.</p>
         </div>
       </div>
     </div>
@@ -608,12 +620,17 @@
         </div>
         <div class="step reveal">
           <h3>Generate</h3>
-          <p>Tokens, style directions, a DESIGN.md, or components come out of the stored patterns.</p>
+          <p>Tokens, style directions, a DESIGN.md, components, or a motion layer come out of the stored patterns.</p>
           <span class="arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
         </div>
         <div class="step reveal">
           <h3>Audit</h3>
-          <p>The detector checks the output. Clean means ship it; tells found means regenerate.</p>
+          <p>The detector checks the output for AI tells. Clean moves on; tells found means regenerate.</p>
+          <span class="arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+        </div>
+        <div class="step reveal">
+          <h3>Verify &amp; ship</h3>
+          <p>Render it at every width, check contrast in both themes, then inline every asset into one portable file.</p>
           <span class="arrow"></span>
         </div>
       </div>
@@ -625,7 +642,7 @@
     <div class="wrap">
       <div class="section-head reveal">
         <span class="eyebrow">Tools</span>
-        <h2>Seventeen MCP tools</h2>
+        <h2>Twenty-three MCP tools</h2>
         <p>Each one also has a matching CLI subcommand for scripting or piping context.</p>
       </div>
       <div class="tabs reveal" role="tablist" aria-label="Filter tools by category">
@@ -634,6 +651,7 @@
         <button class="tab" role="tab" aria-selected="false" data-filter="analyze">Analyze</button>
         <button class="tab" role="tab" aria-selected="false" data-filter="generate">Generate</button>
         <button class="tab" role="tab" aria-selected="false" data-filter="audit">Audit</button>
+        <button class="tab" role="tab" aria-selected="false" data-filter="verify">Verify &amp; ship</button>
         <button class="tab" role="tab" aria-selected="false" data-filter="manage">Manage</button>
       </div>
       <div class="tool-grid" id="toolGrid">
@@ -644,14 +662,20 @@
         <div class="tool reveal" data-cat="analyze"><span class="tool__cat">Analyze</span><span class="tool__name">scout_search</span><p>Query the pattern database by keyword and category. Every capture adds to the library.</p></div>
         <div class="tool reveal" data-cat="analyze"><span class="tool__cat">Analyze</span><span class="tool__name">scout_compare</span><p>Screenshot paths and patterns for two or more captured sites, side by side.</p></div>
         <div class="tool reveal" data-cat="analyze"><span class="tool__cat">Analyze</span><span class="tool__name">scout_inventory</span><p>Component inventory from the live DOM: buttons, inputs, cards, badges grouped by variant with computed styles and counts.</p></div>
+        <div class="tool reveal" data-cat="analyze"><span class="tool__cat">Analyze</span><span class="tool__name">scout_checklist</span><p>Pre-generation checklist for a captured site: imagery, motion, forms, theming, responsive coverage, fonts, and bundling turned into explicit choices, each seeded from what the reference does.</p></div>
         <div class="tool reveal" data-cat="generate"><span class="tool__cat">Generate</span><span class="tool__name">scout_tokens</span><p>Generate tokens as json, css, tailwind, style-dictionary, w3c (DTCG), or figma (Tokens Studio).</p></div>
         <div class="tool reveal" data-cat="generate"><span class="tool__cat">Generate</span><span class="tool__name">scout_styles</span><p>Three design directions, Refined, Bold, and Expressive, each with its own complete token set.</p></div>
-        <div class="tool reveal" data-cat="generate"><span class="tool__cat">Generate</span><span class="tool__name">scout_codegen</span><p>Scaffold hero, navbar, card, footer, features, testimonials, cta, or pricing as React or HTML from a token set. Pre-checked against the audit rules.</p></div>
+        <div class="tool reveal" data-cat="generate"><span class="tool__cat">Generate</span><span class="tool__name">scout_codegen</span><p>Scaffold hero, navbar, card, footer, features, testimonials, cta, or pricing as React or HTML from a token set. Runs the audit rules on its own output.</p></div>
+        <div class="tool reveal" data-cat="generate"><span class="tool__cat">Generate</span><span class="tool__name">scout_motion</span><p>Guarded scroll-animation layer as CSS + JS: reveal, parallax, line-mask, count-up, marquee, magnetic, blur-in, optional theme transition. Vanilla or GSAP. Bails under prefers-reduced-motion.</p></div>
         <div class="tool reveal" data-cat="generate"><span class="tool__cat">Generate</span><span class="tool__name">scout_moodboard</span><p>Build an HTML mood board from captured sites: screenshots, palettes, type analysis, mood tags.</p></div>
         <div class="tool reveal" data-cat="generate"><span class="tool__cat">Generate</span><span class="tool__name">scout_designmd</span><p>Generate an impeccable-compatible DESIGN.md that any AI coding tool can read and enforce.</p></div>
         <div class="tool reveal" data-cat="audit"><span class="tool__cat">Audit</span><span class="tool__name">scout_audit</span><p>Anti-pattern detection on a file, raw text, or a captured site (real HTML plus extracted styles and tokens).</p></div>
         <div class="tool reveal" data-cat="audit"><span class="tool__cat">Audit</span><span class="tool__name">scout_a11y</span><p>Deterministic accessibility scan: alt text, control names, labels, heading order, landmarks, focus rings, with a 0 to 100 score.</p></div>
         <div class="tool reveal" data-cat="audit"><span class="tool__cat">Audit</span><span class="tool__name">scout_consistency</span><p>Cross-page consistency report from a crawl: font drift, palette spread, unstable nav and footer, with a score and an HTML report.</p></div>
+        <div class="tool reveal" data-cat="verify"><span class="tool__cat">Verify</span><span class="tool__name">scout_verify</span><p>Render generated HTML — a file, a string, or a URL — at mobile/tablet/desktop and report horizontal overflow with the offending elements, tap-target size, missing meta, broken images, console errors, script syntax, and AI-tell lint.</p></div>
+        <div class="tool reveal" data-cat="verify"><span class="tool__cat">Verify</span><span class="tool__name">scout_contrast</span><p>WCAG 2.1 contrast for a single pair, a CSS file, or a whole token set — token mode checks light and dark together so a combo that passes one theme but fails the other is caught. Returns a fix per failure.</p></div>
+        <div class="tool reveal" data-cat="verify"><span class="tool__cat">Ship</span><span class="tool__name">scout_bundle</span><p>Inline remote images as data: URIs and allowlisted CDN script/style into one self-contained file that opens with no network. Adds missing charset and viewport meta.</p></div>
+        <div class="tool reveal" data-cat="verify"><span class="tool__cat">Ship</span><span class="tool__name">scout_deps</span><p>Resolve exact pinned versions and ready-to-paste script URLs for CDN libraries — cdnjs, then jsDelivr. Handles the awkward ones (gsap, ScrollTrigger, lenis).</p></div>
         <div class="tool reveal" data-cat="manage"><span class="tool__cat">Manage</span><span class="tool__name">scout_list</span><p>List captured sites and crawls held in the local database.</p></div>
         <div class="tool reveal" data-cat="manage"><span class="tool__cat">Manage</span><span class="tool__name">scout_delete</span><p>Remove a captured site or crawl, along with its screenshots and outputs.</p></div>
       </div>
@@ -689,8 +713,8 @@
           <h3>Quality <span class="tag">quality</span></h3>
           <div class="chips">
             <span class="chip">Untinted greys</span><span class="chip">Pure black</span><span class="chip">Grey text on colour</span>
-            <span class="chip">WCAG AA contrast</span><span class="chip">Too many typefaces</span><span class="chip">Too many pinned elements</span>
-            <span class="chip">Multiple animation libraries</span>
+            <span class="chip">WCAG AA contrast (light + dark)</span><span class="chip">Too many typefaces</span><span class="chip">Too many pinned elements</span>
+            <span class="chip">Multiple animation libraries</span><span class="chip">Missing viewport meta</span><span class="chip">Missing lang attribute</span>
           </div>
         </div>
       </div>
