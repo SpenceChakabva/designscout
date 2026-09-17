@@ -327,6 +327,27 @@
     .step .arrow { position: absolute; right: -11px; top: 50%; transform: translateY(-50%); color: var(--border); z-index: 2; }
     .step:last-child .arrow { display: none; }
 
+    /* ── Showcase ── */
+    .showcase-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
+    .showcase-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+      overflow: hidden; box-shadow: var(--shadow-sm);
+      transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+    }
+    .showcase-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: color-mix(in srgb, var(--primary) 35%, var(--border)); }
+    .showcase-card__frame { position: relative; aspect-ratio: 1522 / 784; overflow: hidden; background: var(--muted); border-bottom: 1px solid var(--border); }
+    .showcase-card__frame img { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }
+    .showcase-card__body { padding: 18px 20px 20px; }
+    .showcase-card__tag {
+      display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: .68rem; font-weight: 600;
+      letter-spacing: .08em; text-transform: uppercase; color: var(--primary-strong);
+      margin-bottom: 8px;
+    }
+    .showcase-card h3 { font-size: 1.02rem; margin-bottom: 6px; }
+    .showcase-card p { font-size: .87rem; color: var(--muted-foreground); }
+    .showcase-card__chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+    .showcase-note { margin-top: 18px; font-size: .88rem; color: var(--muted-foreground); }
+
     /* ── Tools ── */
     .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 26px; }
     .tab {
@@ -366,6 +387,21 @@
       font-size: .78rem; padding: .3rem .62rem; border-radius: 6px;
       background: var(--muted); border: 1px solid var(--border); color: var(--muted-foreground);
     }
+
+    /* ── Audit demo ── */
+    .audit-demo { margin-top: 16px; }
+    .audit-demo__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .audit-demo .terminal { box-shadow: var(--shadow-sm); }
+    .audit-demo .terminal__body { font-size: .76rem; line-height: 1.95; }
+    .audit-demo .terminal__body .line { opacity: 1; transform: none; }
+    .audit-demo .badge-label {
+      display: inline-flex; align-items: center; gap: .35rem;
+      font-family: 'JetBrains Mono', monospace; font-size: .68rem; font-weight: 600;
+      letter-spacing: .08em; text-transform: uppercase; margin-bottom: 10px;
+    }
+    .audit-demo .badge-label.bad { color: var(--warn); }
+    .audit-demo .badge-label.good { color: var(--primary-strong); }
+    .audit-demo .badge-label .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 
     /* ── Formats table ── */
     .formats { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
@@ -443,11 +479,12 @@
       .pipeline { grid-template-columns: repeat(2, 1fr); }
       .step .arrow { display: none; }
       .setup-grid { grid-template-columns: 1fr; }
+      .audit-demo__grid { grid-template-columns: 1fr; }
     }
     @media (max-width: 620px) {
       .wrap { padding: 0 18px; }
       .nav-links { display: none; }
-      .cap-grid, .tool-grid, .detect-grid, .pipeline { grid-template-columns: 1fr; }
+      .cap-grid, .tool-grid, .detect-grid, .pipeline, .showcase-grid { grid-template-columns: 1fr; }
       .hero { padding: 56px 0 52px; }
       .cta-box { padding: 32px 22px; }
       .setup-step { padding: 18px; }
@@ -479,6 +516,7 @@
         <span class="nav-ind" aria-hidden="true"></span>
         <a href="#capabilities">Capabilities</a>
         <a href="#how">How it works</a>
+        <a href="#showcase">Showcase</a>
         <a href="#tools">Tools</a>
         <a href="#detection">Detection</a>
         <a href="#setup">Setup</a>
@@ -637,6 +675,55 @@
     </div>
   </section>
 
+  <!-- ═══════════════ SHOWCASE ═══════════════ -->
+  <section class="block" id="showcase">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <span class="eyebrow">In the wild</span>
+        <h2>Built with DesignScout</h2>
+        <p>Real front ends, generated from captured design systems instead of a model's defaults. The three below are one design study — five reference sites captured and distilled — run through three separate direction passes, the same shape as <code>scout_styles</code>'s Refined, Bold, and Expressive output.</p>
+      </div>
+      <div class="showcase-grid">
+        <div class="showcase-card reveal">
+          <div class="showcase-card__frame"><img src="previews/zspc-kontakt.jpg" alt="Zimbabwe Street Photography Club prototype in the contact-sheet direction: a dark hero with a pinned frame strip, grease-pencil keeper marks, and safelight amber accents" loading="lazy" width="1522" height="784" /></div>
+          <div class="showcase-card__body">
+            <span class="showcase-card__tag">Direction A · Contact sheet</span>
+            <h3>Zimbabwe Street Photography Club — Kontakt</h3>
+            <p>Frame numbers down a sprocket rail, grease-pencil keeper marks, a hero photo that "develops" from blurred sepia to sharp on scroll.</p>
+            <div class="showcase-card__chips"><span class="chip">Fraunces + Plex Mono</span><span class="chip">self-contained build</span></div>
+          </div>
+        </div>
+        <div class="showcase-card reveal">
+          <div class="showcase-card__frame"><img src="previews/zspc-msasa.jpg" alt="Zimbabwe Street Photography Club prototype in the seasonal-almanac direction: a serif headline over a twelve-month vertical spine navigator" loading="lazy" width="1522" height="784" /></div>
+          <div class="showcase-card__body">
+            <span class="showcase-card__tag">Direction B · Field almanac</span>
+            <h3>Zimbabwe Street Photography Club — Msasa</h3>
+            <p>Same brief, same tokens pool, an entirely different read: a twelve-month spine where the whole page re-tints — wine, gold, jacaranda — as the year turns.</p>
+            <div class="showcase-card__chips"><span class="chip">Instrument Serif</span><span class="chip">seasonal re-tint</span></div>
+          </div>
+        </div>
+        <div class="showcase-card reveal">
+          <div class="showcase-card__frame"><img src="previews/zspc-kombi.jpg" alt="Zimbabwe Street Photography Club prototype in the street-signage direction: a bold enamel-sign nav with a scrolling route-board marquee" loading="lazy" width="1522" height="784" /></div>
+          <div class="showcase-card__body">
+            <span class="showcase-card__tag">Direction C · Street signage</span>
+            <h3>Zimbabwe Street Photography Club — Kombi</h3>
+            <p>Same brief again: the nav is a route board, and a scroll-velocity-reactive marquee runs today's walk like a kombi destination sign.</p>
+            <div class="showcase-card__chips"><span class="chip">Bungee + Anton</span><span class="chip">velocity marquee</span></div>
+          </div>
+        </div>
+        <div class="showcase-card reveal">
+          <div class="showcase-card__frame"><img src="previews/loomline.jpg" alt="Loomline dev-tool landing page: a dark hero reading Docs that ship themselves, with an install-CLI command line" loading="lazy" width="1522" height="784" /></div>
+          <div class="showcase-card__body">
+            <span class="showcase-card__tag">Dev-tool landing page</span>
+            <h3>Loomline — API docs that ship themselves</h3>
+            <p>Tokens extracted from a captured reference, a DESIGN.md generated straight from the pattern set, then a full dark/light landing page built off it.</p>
+            <div class="showcase-card__chips"><span class="chip">DM Sans</span><span class="chip">dark + light tokens</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- ═══════════════ TOOLS ═══════════════ -->
   <section class="block tint" id="tools">
     <div class="wrap">
@@ -687,8 +774,8 @@
     <div class="wrap">
       <div class="section-head reveal">
         <span class="eyebrow">Anti-pattern detection</span>
-        <h2>What the audit catches</h2>
-        <p>Point <code>scout_audit</code> at a file, raw text, or a captured site. Rules run across three categories with no model involved.</p>
+        <h2>Twenty-seven rules that know what "AI-made" looks like</h2>
+        <p>Point <code>scout_audit</code> at a file, raw text, or a captured site. Every rule is a deterministic check against real markup and computed styles, not a vibe check from a model — same input, same finding, every time.</p>
       </div>
       <div class="detect-grid">
         <div class="detect reveal">
@@ -718,6 +805,45 @@
           </div>
         </div>
       </div>
+
+      <div class="audit-demo reveal">
+        <div class="audit-demo__grid">
+          <div class="terminal">
+            <div class="terminal__bar"><span></span><span></span><span></span><span class="label">before</span></div>
+            <div class="terminal__body">
+<span class="badge-label bad"><span class="dot"></span> 4 tells found</span>
+<div class="line"><span class="prompt">&gt;</span> scout_audit generated-hero.css</div>
+<div class="line">&nbsp;</div>
+<div class="line"><span class="flag">warning</span> <span class="cmd">cream-palette</span></div>
+<div class="line"><span class="dim">  background: #F8F5F0 — the default AI "warm neutral"</span></div>
+<div class="line"><span class="flag">warning</span> <span class="cmd">overused-font</span></div>
+<div class="line"><span class="dim">  font-family: Inter — the default AI sans</span></div>
+<div class="line"><span class="flag">warning</span> <span class="cmd">gradient-text</span></div>
+<div class="line"><span class="dim">  background-clip: text on the &lt;h1&gt;</span></div>
+<div class="line"><span class="flag">advisory</span> <span class="cmd">dark-glow</span></div>
+<div class="line"><span class="dim">  box-shadow: 0 0 40px rgba(124,58,237,.4)</span></div>
+            </div>
+          </div>
+          <div class="terminal">
+            <div class="terminal__bar"><span></span><span></span><span></span><span class="label">after</span></div>
+            <div class="terminal__body">
+<span class="badge-label good"><span class="dot"></span> clean, 0 tells</span>
+<div class="line"><span class="prompt">&gt;</span> scout_audit generated-hero.css</div>
+<div class="line">&nbsp;</div>
+<div class="line"><span class="ok">✓</span> <span class="cmd">no cream palette</span></div>
+<div class="line"><span class="dim">  background: #e9e7e4 — from the captured token set</span></div>
+<div class="line"><span class="ok">✓</span> <span class="cmd">no overused font</span></div>
+<div class="line"><span class="dim">  font-family: Fraunces, Hanken Grotesk</span></div>
+<div class="line"><span class="ok">✓</span> <span class="cmd">no gradient text</span></div>
+<div class="line"><span class="dim">  solid fill, line-mask reveal instead</span></div>
+<div class="line"><span class="ok">✓</span> <span class="cmd">no glow shadow</span></div>
+<div class="line"><span class="dim">  flat elevation, brand-tinted border</span></div>
+            </div>
+          </div>
+        </div>
+        <p class="showcase-note">Illustrative run against a generic AI-styled hero, regenerated from a captured token set. Same shape of output <code>scout_audit</code> returns on a real file — see it applied to <a href="#showcase" style="color:var(--primary-strong);font-weight:600;">the prototypes above</a>.</p>
+      </div>
+
       <p class="setup-note">DesignScout uses <a href="https://github.com/pbakaus/impeccable" target="_blank" rel="noopener" style="color:var(--primary-strong);font-weight:600;">impeccable</a> for design-quality enforcement. Its own generated components and default token set pass the same audit.</p>
     </div>
   </section>
@@ -1027,6 +1153,7 @@ claude mcp add designscout -s user -- \
       });
     }
     batch('.cap-grid .card');
+    batch('.showcase-grid .showcase-card', { y: 24, stagger: 0.08 });
     batch('.pipeline .step', { y: 20, stagger: 0.08 });
     batch('#toolGrid .tool', { y: 18, stagger: 0.04, duration: 0.55 });
     batch('.detect', { y: 24, stagger: 0.1 });
@@ -1081,7 +1208,7 @@ claude mcp add designscout -s user -- \
     });
 
     // ---- Nav scroll-spy: pick the section under the viewport's upper third ----
-    var spySections = ['capabilities', 'how', 'tools', 'detection', 'setup']
+    var spySections = ['capabilities', 'how', 'showcase', 'tools', 'detection', 'setup']
       .map(function (id) { return { id: id, el: document.getElementById(id),
         link: navLinks.filter(function (a) { return a.getAttribute('href') === '#' + id; })[0] }; })
       .filter(function (s) { return s.el && s.link; });
