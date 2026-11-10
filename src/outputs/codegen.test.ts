@@ -27,3 +27,17 @@ test('react output uses className and embeds the css', () => {
   assert.doesNotMatch(code, / class="/);
   assert.match(code, /export function Hero/);
 });
+
+test('navbar ships a CSS-only off-canvas mobile menu, no JS', () => {
+  const { code } = generateComponent('navbar', 'html', defaultTokens());
+  assert.match(code, /<input type="checkbox" id="ds-nav-toggle"/);
+  assert.match(code, /<label class="ds-nav-toggle" for="ds-nav-toggle"/);
+  assert.match(code, /ds-nav-toggle-input:checked ~ \.ds-nav-links/);
+  assert.doesNotMatch(code, /<script/);
+});
+
+test('navbar react output converts for= to htmlFor= (valid JSX)', () => {
+  const { code } = generateComponent('navbar', 'react', defaultTokens());
+  assert.match(code, /htmlFor="ds-nav-toggle"/);
+  assert.doesNotMatch(code, / for="/);
+});

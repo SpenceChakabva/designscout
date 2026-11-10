@@ -89,6 +89,18 @@ test('emitted js is syntactically valid across option combinations', () => {
   }
 });
 
+test('underline effect is pure CSS: no JS, not gated behind anim-ready', () => {
+  for (const library of ['none', 'gsap'] as const) {
+    const r = generateMotionLayer({ library, effects: ['underline'] });
+    assert.match(r.css, /\[data-underline\]::after/);
+    assert.match(r.css, /\[data-underline\]:hover::after/);
+    assert.doesNotMatch(r.css, /anim-ready \[data-underline\]/);
+    assert.match(r.css, /\[data-underline\]::after \{ transition: none !important; \}/);
+    assert.doesNotMatch(r.js, /data-underline/);
+    assert.match(r.html, /data-underline/);
+  }
+});
+
 test('generateMotionLayer falls back to reveal when no effects resolve', () => {
   const r = generateMotionLayer({ effects: [] as MotionEffect[] });
   assert.deepEqual(r.effects, ['reveal']);
@@ -119,6 +131,17 @@ test('describeDetected reads GSAP + Lenis + scroll signals from stored patterns'
   for (const e of ['reveal', 'stagger', 'parallax', 'marquee', 'count-up', 'line-mask', 'magnetic'] as MotionEffect[]) {
     assert.ok(d.suggestedEffects.includes(e), `expected ${e} in suggested effects`);
   }
+});
+
+test('describeDetected picks up a link-underline hover mention', () => {
+  const patterns: DesignPattern[] = [
+    {
+      id: 'u1', siteId: 's1', category: 'component', subcategory: 'nav-item',
+      data: {}, description: 'hover underline sweep on nav links', confidence: 0.7,
+    },
+  ];
+  const d = describeDetected(patterns);
+  assert.ok(d.suggestedEffects.includes('underline'));
 });
 
 test('describeDetected is defensive against empty / odd pattern data', () => {

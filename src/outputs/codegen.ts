@@ -59,6 +59,11 @@ const SECTION_BUILDERS: Record<ComponentType, Builder> = {
   <header class="ds-nav">
     <div class="ds-container ds-nav-inner">
       <a class="ds-brand" href="/">Brand</a>
+      <input type="checkbox" id="ds-nav-toggle" class="ds-nav-toggle-input" />
+      <label class="ds-nav-toggle" for="ds-nav-toggle" aria-label="Open menu">
+        <span></span><span></span>
+      </label>
+      <label class="ds-nav-scrim" for="ds-nav-toggle" aria-hidden="true"></label>
       <nav class="ds-nav-links">
         <a href="#">Product</a>
         <a href="#">Pricing</a>
@@ -173,11 +178,14 @@ body { margin: 0; font-family: var(--font-body); color: var(--color-foreground);
 .ds-btn-primary { background: var(--color-primary); color: var(--color-primary-foreground); }
 .ds-btn-ghost { background: transparent; color: var(--color-foreground); border-color: var(--color-border); }
 .ds-link { color: var(--color-primary); text-decoration: none; font-weight: 600; }
-.ds-nav { border-bottom: 1px solid var(--color-border); }
+.ds-nav { border-bottom: 1px solid var(--color-border); position: relative; }
 .ds-nav-inner { display: flex; align-items: center; justify-content: space-between; padding-top: 1rem; padding-bottom: 1rem; gap: 1.5rem; }
 .ds-brand { font-family: var(--font-heading); font-weight: 700; text-decoration: none; color: var(--color-foreground); }
 .ds-nav-links { display: flex; gap: 1.25rem; }
 .ds-nav-links a, .ds-footer-links a { color: var(--color-muted-foreground); text-decoration: none; font-size: .9rem; }
+.ds-nav-toggle-input { position: absolute; opacity: 0; pointer-events: none; }
+.ds-nav-toggle { display: none; }
+.ds-nav-scrim { display: none; }
 .ds-grid { display: grid; gap: 1.5rem; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
 .ds-card, .ds-feature, .ds-plan { border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: 1.5rem; background: var(--color-background); }
 .ds-plan-featured { box-shadow: var(--shadow-md); border-color: var(--color-primary); }
@@ -193,7 +201,37 @@ body { margin: 0; font-family: var(--font-body); color: var(--color-foreground);
 .ds-footer-inner { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: space-between; }
 .ds-footer-links { display: flex; gap: 1rem; }
 .ds-fineprint { color: var(--color-muted-foreground); font-size: .85rem; margin: 0; width: 100%; }
-@media (max-width: 640px) { .ds-nav-links { display: none; } .ds-h1 { font-size: 2rem; } }`;
+@media (max-width: 640px) {
+  .ds-h1 { font-size: 2rem; }
+  /* Off-canvas menu, CSS-only (checkbox hack): no JS in HTML output, and the
+     same markup works unmodified after the React wrapper's class->className
+     swap, since it's native <input>/<label> behavior, not an event handler. */
+  .ds-nav-toggle {
+    display: flex; flex-direction: column; justify-content: center; gap: 5px;
+    width: 28px; height: 28px; cursor: pointer; order: 3;
+  }
+  .ds-nav-toggle span {
+    display: block; height: 2px; border-radius: 1px; background: var(--color-foreground);
+    transition: transform .3s cubic-bezier(.22,1,.36,1), opacity .2s ease;
+  }
+  .ds-nav-toggle-input:checked ~ .ds-nav-toggle span:first-child { transform: translateY(3.5px) rotate(45deg); }
+  .ds-nav-toggle-input:checked ~ .ds-nav-toggle span:last-child { transform: translateY(-3.5px) rotate(-45deg); }
+  .ds-nav-links {
+    position: fixed; inset: 0 0 0 auto; width: min(320px, 86vw); z-index: 40;
+    display: flex; flex-direction: column; gap: 1.25rem; padding: 5.5rem 1.75rem 2rem;
+    background: var(--color-background); border-left: 1px solid var(--color-border);
+    transform: translateX(100%); transition: transform .35s cubic-bezier(.22,1,.36,1);
+  }
+  .ds-nav-toggle-input:checked ~ .ds-nav-links { transform: translateX(0); }
+  .ds-nav-scrim {
+    display: block; position: fixed; inset: 0; z-index: 30; background: rgba(0,0,0,0);
+    pointer-events: none; transition: background .35s ease;
+  }
+  .ds-nav-toggle-input:checked ~ .ds-nav-scrim { background: rgba(0,0,0,.35); pointer-events: auto; }
+  @media (prefers-reduced-motion: reduce) {
+    .ds-nav-toggle span, .ds-nav-links, .ds-nav-scrim { transition: none; }
+  }
+}`;
 }
 
 // ── framework wrappers ──
@@ -217,6 +255,7 @@ ${body}
 function toReact(type: ComponentType, body: string, css: string): string {
   const jsx = body
     .replace(/ class=/g, ' className=')
+    .replace(/ for=/g, ' htmlFor=')
     .replace(/<!--[\s\S]*?-->/g, '');
   return `import './${type}.css'; // ${css.length} bytes of token-derived CSS (below)
 

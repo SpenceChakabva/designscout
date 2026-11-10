@@ -32,7 +32,8 @@ export type MotionEffect =
   | 'count-up'
   | 'marquee'
   | 'magnetic'
-  | 'blur-in';
+  | 'blur-in'
+  | 'underline';
 
 /** Every effect key this generator understands, in canonical emit order. */
 export const MOTION_EFFECTS: MotionEffect[] = [
@@ -44,6 +45,7 @@ export const MOTION_EFFECTS: MotionEffect[] = [
   'marquee',
   'magnetic',
   'blur-in',
+  'underline',
 ];
 
 export interface DetectedMotion {
@@ -159,6 +161,7 @@ export function describeDetected(patterns: DesignPattern[] = []): DetectedMotion
   }
   if (mentions(/blur|defocus|focus[- ]?in|develops|darkroom|resolve on/)) effects.add('blur-in');
   if (mentions(/magnetic|cursor[- ]?follow|pointer[- ]?follow/)) effects.add('magnetic');
+  if (mentions(/underline (?:sweep|reveal|hover)|hover underline|link[- ]?underline/)) effects.add('underline');
 
   return {
     libraries: [...libraries],
@@ -221,6 +224,22 @@ function buildCss(effects: MotionEffect[], theme: ThemeTransition, library: Moti
   if (on('line-mask')) {
     structural.push(`[data-line-mask] .ds-line { display: block; overflow: hidden; }`);
   }
+  if (on('underline')) {
+    structural.push(
+      `/* pure CSS, no JS: safe to show from first paint, not gated behind .anim-ready */\n` +
+      `[data-underline] { position: relative; display: inline-block; }\n` +
+      `[data-underline]::after {\n` +
+      `  content: ''; position: absolute; left: 0; bottom: -2px; width: 100%; height: 1px;\n` +
+      `  background: currentColor; transform: scaleX(0); transform-origin: right;\n` +
+      `  transition: transform .32s cubic-bezier(.22,1,.36,1);\n` +
+      `  /* delay only the retreat, so a jittery pointer near the edge doesn't flicker the line */\n` +
+      `  transition-delay: .12s;\n` +
+      `}\n` +
+      `[data-underline]:hover::after, [data-underline]:focus-visible::after {\n` +
+      `  transform: scaleX(1); transform-origin: left; transition-delay: 0s;\n` +
+      `}`,
+    );
+  }
   if (structural.length) parts.push(`/* structural */\n` + structural.join('\n'));
 
   // At-rest hidden states, gated behind html.anim-ready.
@@ -274,6 +293,7 @@ function buildCss(effects: MotionEffect[], theme: ThemeTransition, library: Moti
     `    transform: none !important;\n` +
     `    transition: none !important;\n` +
     `  }\n` +
+    `  [data-underline]::after { transition: none !important; }\n` +
     `  [data-marquee] > * + * { display: none !important; }\n` +
     `  ::view-transition-group(*),\n` +
     `  ::view-transition-old(*),\n` +
@@ -712,6 +732,7 @@ function buildHtml(
   if (on('marquee')) hooks.push(`  data-marquee               seamless infinite marquee (first child is the track)`);
   if (on('magnetic')) hooks.push(`  data-magnetic="0.25"       pointer-following button (fine pointers only)`);
   if (on('blur-in')) hooks.push(`  data-blur-in               blur-to-focus when scrolled into view`);
+  if (on('underline')) hooks.push(`  data-underline             hover/focus sweep-in underline, pure CSS (no JS, works everywhere)`);
   if (theme !== 'none') hooks.push(`  data-theme-toggle          button that swaps html[data-theme] with a ${theme} transition`);
 
   const load: string[] = [`  1. Link motion.css in <head>; load motion.js before </body>.`];
@@ -775,6 +796,13 @@ function buildNotes(
     notes.push(
       `Theme transition (${theme}): wired to [data-theme-toggle] via document.startViewTransition, ` +
       `degrading to an instant html[data-theme] swap where the View Transitions API is unavailable or motion is reduced.`,
+    );
+  }
+
+  if (effects.includes('underline')) {
+    notes.push(
+      `Underline: pure CSS, no JS and no library dependency — works identically on the vanilla and GSAP builds. ` +
+      `Not gated behind html.anim-ready since there's no at-rest hidden state to flash.`,
     );
   }
 
