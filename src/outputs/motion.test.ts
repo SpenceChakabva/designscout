@@ -101,6 +101,20 @@ test('underline effect is pure CSS: no JS, not gated behind anim-ready', () => {
   }
 });
 
+test('hover-text splits into a two-row stack and respects reduced motion', () => {
+  for (const library of ['none', 'gsap'] as const) {
+    const r = generateMotionLayer({ library, effects: ['hover-text'] });
+    assert.match(r.css, /\[data-hover-text\] \.ds-hover-stack/);
+    assert.match(r.css, /\[data-hover-text\]:hover \.ds-hover-stack/);
+    assert.match(r.css, /\[data-hover-text\] \.ds-hover-stack \{ transition: none !important; \}/);
+    assert.match(r.js, /ds-hover-stack/);
+    assert.match(r.js, /ds-hover-row/);
+    assert.match(r.html, /data-hover-text/);
+  }
+  const reducedOnly = generateMotionLayer({ library: 'gsap', effects: ['hover-text'] });
+  assert.match(reducedOnly.js, /if \(reduced \|\| !hasGsap\)/);
+});
+
 test('generateMotionLayer falls back to reveal when no effects resolve', () => {
   const r = generateMotionLayer({ effects: [] as MotionEffect[] });
   assert.deepEqual(r.effects, ['reveal']);

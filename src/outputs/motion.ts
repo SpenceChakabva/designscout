@@ -33,7 +33,8 @@ export type MotionEffect =
   | 'marquee'
   | 'magnetic'
   | 'blur-in'
-  | 'underline';
+  | 'underline'
+  | 'hover-text';
 
 /** Every effect key this generator understands, in canonical emit order. */
 export const MOTION_EFFECTS: MotionEffect[] = [
@@ -46,6 +47,7 @@ export const MOTION_EFFECTS: MotionEffect[] = [
   'magnetic',
   'blur-in',
   'underline',
+  'hover-text',
 ];
 
 export interface DetectedMotion {
@@ -162,6 +164,9 @@ export function describeDetected(patterns: DesignPattern[] = []): DetectedMotion
   if (mentions(/blur|defocus|focus[- ]?in|develops|darkroom|resolve on/)) effects.add('blur-in');
   if (mentions(/magnetic|cursor[- ]?follow|pointer[- ]?follow/)) effects.add('magnetic');
   if (mentions(/underline (?:sweep|reveal|hover)|hover underline|link[- ]?underline/)) effects.add('underline');
+  if (mentions(/hover (?:text|label) (?:swap|roll|slide)|text (?:swap|roll) on hover|two[- ]?line hover/)) {
+    effects.add('hover-text');
+  }
 
   return {
     libraries: [...libraries],
@@ -240,6 +245,19 @@ function buildCss(effects: MotionEffect[], theme: ThemeTransition, library: Moti
       `}`,
     );
   }
+  if (on('hover-text')) {
+    structural.push(
+      `/* two-row hover swap: JS wraps the text in a stacked pair, CSS does the rest.\n` +
+      `   Pure hover transition, not gated behind .anim-ready — there's one row visible\n` +
+      `   at rest either way, so there's nothing to flash before JS runs. */\n` +
+      `[data-hover-text] { display: inline-block; overflow: hidden; vertical-align: top; line-height: 1.2; }\n` +
+      `[data-hover-text] .ds-hover-stack { display: block; transition: transform .35s cubic-bezier(.22,1,.36,1); }\n` +
+      `[data-hover-text] .ds-hover-row { display: block; line-height: 1.2; }\n` +
+      `[data-hover-text]:hover .ds-hover-stack, [data-hover-text]:focus-visible .ds-hover-stack {\n` +
+      `  transform: translateY(-1.2em);\n` +
+      `}`,
+    );
+  }
   if (structural.length) parts.push(`/* structural */\n` + structural.join('\n'));
 
   // At-rest hidden states, gated behind html.anim-ready.
@@ -294,6 +312,7 @@ function buildCss(effects: MotionEffect[], theme: ThemeTransition, library: Moti
     `    transition: none !important;\n` +
     `  }\n` +
     `  [data-underline]::after { transition: none !important; }\n` +
+    `  [data-hover-text] .ds-hover-stack { transition: none !important; }\n` +
     `  [data-marquee] > * + * { display: none !important; }\n` +
     `  ::view-transition-group(*),\n` +
     `  ::view-transition-old(*),\n` +
@@ -390,6 +409,7 @@ function buildJs(
   }
 
   if (on('line-mask')) body.push(LINE_SPLIT_JS);
+  if (on('hover-text')) body.push(HOVER_TEXT_SPLIT_JS);
 
   if (gsap) {
     if (on('reveal')) body.push(GSAP_REVEAL);
@@ -493,6 +513,31 @@ const LINE_SPLIT_JS =
   `      mask.appendChild(inner);\n` +
   `      el.appendChild(mask);\n` +
   `    });\n` +
+  `  });\n` +
+  `})();`;
+
+const HOVER_TEXT_SPLIT_JS =
+  `/* wrap [data-hover-text] content in a two-row stack: row 1 at rest, row 2 */\n` +
+  `/* (the attribute's value, or a copy of the text) slides up to replace it on hover */\n` +
+  `(function () {\n` +
+  `  var hosts = document.querySelectorAll('[data-hover-text]');\n` +
+  `  Array.prototype.forEach.call(hosts, function (el) {\n` +
+  `    var text = (el.textContent || '').trim();\n` +
+  `    if (!text) return;\n` +
+  `    var sub = el.getAttribute('data-hover-text') || text;\n` +
+  `    el.textContent = '';\n` +
+  `    var stack = document.createElement('span');\n` +
+  `    stack.className = 'ds-hover-stack';\n` +
+  `    var row1 = document.createElement('span');\n` +
+  `    row1.className = 'ds-hover-row';\n` +
+  `    row1.textContent = text;\n` +
+  `    var row2 = document.createElement('span');\n` +
+  `    row2.className = 'ds-hover-row';\n` +
+  `    row2.textContent = sub;\n` +
+  `    row2.setAttribute('aria-hidden', 'true');\n` +
+  `    stack.appendChild(row1);\n` +
+  `    stack.appendChild(row2);\n` +
+  `    el.appendChild(stack);\n` +
   `  });\n` +
   `})();`;
 
@@ -733,6 +778,7 @@ function buildHtml(
   if (on('magnetic')) hooks.push(`  data-magnetic="0.25"       pointer-following button (fine pointers only)`);
   if (on('blur-in')) hooks.push(`  data-blur-in               blur-to-focus when scrolled into view`);
   if (on('underline')) hooks.push(`  data-underline             hover/focus sweep-in underline, pure CSS (no JS, works everywhere)`);
+  if (on('hover-text')) hooks.push(`  data-hover-text="Label"    two-row hover swap; attribute value is the second row (defaults to a copy)`);
   if (theme !== 'none') hooks.push(`  data-theme-toggle          button that swaps html[data-theme] with a ${theme} transition`);
 
   const load: string[] = [`  1. Link motion.css in <head>; load motion.js before </body>.`];
@@ -803,6 +849,14 @@ function buildNotes(
     notes.push(
       `Underline: pure CSS, no JS and no library dependency — works identically on the vanilla and GSAP builds. ` +
       `Not gated behind html.anim-ready since there's no at-rest hidden state to flash.`,
+    );
+  }
+
+  if (effects.includes('hover-text')) {
+    notes.push(
+      `Hover-text: the two-row split needs a one-time JS pass (no library) to wrap the text — skipped under ` +
+      `prefers-reduced-motion, where the element just keeps its plain text. The swap itself is a CSS transform ` +
+      `transition, not GSAP, so it works the same on the vanilla and GSAP builds.`,
     );
   }
 
