@@ -148,7 +148,11 @@ async function inlineStylesheets(html: string, ctx: Ctx): Promise<string> {
     let css = fetched.text;
     if (ctx.inlineImages) css = await inlineCssUrls(css, resolved, ctx);
     record(ctx, resolved, 'style', fetched.bytes, 'inlined');
-    html = html.replace(tag, `<style>/* ${resolved} */\n${css}\n</style>`);
+    // Replacer must be a function: fetched CSS can contain literal `$&`, `$1`,
+    // `$$`, etc., which String.replace treats as pattern tokens even when the
+    // search argument is a plain string. A function return value is inserted
+    // verbatim, with no special-pattern substitution.
+    html = html.replace(tag, () => `<style>/* ${resolved} */\n${css}\n</style>`);
   }
   return html;
 }
@@ -182,7 +186,13 @@ async function inlineScriptTags(html: string, ctx: Ctx): Promise<string> {
     }
     record(ctx, resolved, 'script', fetched.bytes, 'inlined');
     const open = type ? `<script type="${type}">` : '<script>';
-    html = html.replace(full, `${open}/* ${resolved} */\n${fetched.text}\n</script>`);
+    // Replacer must be a function — see the matching note in inlineStylesheets.
+    // A real-world repro: GSAP's ScrollTrigger.min.js contains a literal `$&`,
+    // which a string replacer re-inserts the *original* short `<script
+    // src="...">` tag (itself containing `</script>`) into the middle of the
+    // inlined code, prematurely closing the tag and dumping the rest of the
+    // library as visible page text.
+    html = html.replace(full, () => `${open}/* ${resolved} */\n${fetched.text}\n</script>`);
   }
   return html;
 }

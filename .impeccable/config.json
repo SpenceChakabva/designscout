@@ -38,6 +38,15 @@
         ],
         "createdAt": "2026-11-10T09:13:25.434Z",
         "reason": "Agent: test fixture deliberately contains gradient-text CSS to verify the rule detects it"
+      },
+      {
+        "rule": "broken-image",
+        "value": "*",
+        "files": [
+          "src/outputs/bundle.test.ts"
+        ],
+        "createdAt": "2026-11-10T11:05:22.996Z",
+        "reason": "Agent: test fixtures deliberately use non-resolving example.invalid image URLs to verify skipped/failed asset reporting, not real images"
       }
     ]
   }

@@ -84,6 +84,36 @@ test('cross-origin <script src> outside the allowlist is not inlined', async () 
   assert.ok(r.warnings.some(w => /allowlist/.test(w)));
 });
 
+// Regression: ScrollTrigger.min.js contains a literal `$&`, which
+// String.replace(searchString, templateString) treats as "insert the matched
+// substring" even when the search argument is a plain string — re-splicing
+// the original short `<script src="...">` tag (which itself contains
+// `</script>`) into the middle of the inlined code and prematurely closing
+// the tag. Skips cleanly when offline, same as the test below.
+test('inlining ScrollTrigger.min.js does not get split by its own `$&` (network)', async (t) => {
+  const src =
+    '<html><head></head><body>' +
+    '<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>' +
+    '</body></html>';
+  let r;
+  try {
+    r = await bundleHtml({ html: src }, { inlineImages: false, inlineScripts: true });
+  } catch (err) {
+    t.skip(`network error: ${(err as Error).message}`);
+    return;
+  }
+  const asset = r.assets.find(a => a.type === 'script');
+  if (!asset || asset.action !== 'inlined') {
+    t.skip('network unavailable');
+    return;
+  }
+  const opens = r.html.match(/<script\b[^>]*>/gi) || [];
+  const closes = r.html.match(/<\/script>/gi) || [];
+  assert.equal(opens.length, 1, `expected exactly one <script> tag, found ${opens.length}`);
+  assert.equal(closes.length, 1, `expected exactly one </script> tag, found ${closes.length}`);
+  assert.doesNotMatch(r.html, /ScrollTrigger\.min\.js"><\/script>/, 'original short tag must not be spliced into the inlined body');
+});
+
 // One real network test — skips cleanly when offline.
 test('inlines a real allowlisted script (network)', async (t) => {
   const src =
