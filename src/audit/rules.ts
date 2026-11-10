@@ -721,6 +721,310 @@ function checkGenericTestimonials(input: CheckInput): Finding[] {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
+// CRAFT CHECKLIST CHECKS
+// Badges, labels, tokens, hierarchy, and feedback — the stuff a page keeps even
+// after it stops looking AI-made. Still deterministic pattern matching, same as
+// everything above: no rendering, no LLM judgment call.
+// ══════════════════════════════════════════════════════════════════════════════
+
+function checkFillerBadge(input: CheckInput): Finding[] {
+  if (!input.html) return [];
+  // A small pill/badge sitting directly above the <h1> almost always just
+  // restates the title or tagline that's already on the page.
+  const pattern = /<(?:span|div)[^>]*class="[^"]*\bbadge\b[^"]*"[^>]*>[\s\S]{0,200}?<\/(?:span|div)>\s*(?:<[^>]+>\s*){0,1}<h1\b/i;
+  if (pattern.test(input.html)) {
+    return [{
+      ruleId: 'filler-badge',
+      category: 'slop',
+      name: 'Filler badge above the headline',
+      severity: 'advisory',
+      description: 'A decorative pill/badge sits directly above the <h1>. It almost always just restates the title or tagline that is already on the page.',
+      fix: 'Delete it, or fold whatever it says into the headline or lead paragraph instead of a separate decorative element.',
+    }];
+  }
+  return [];
+}
+
+function checkRedundantEyebrow(input: CheckInput): Finding[] {
+  if (!input.html) return [];
+  // An uppercase "eyebrow"/"kicker" label immediately before a heading. The
+  // heading already carries the section's identity — the label adds nothing.
+  const pattern = /<(?:span|p|div)[^>]*class="[^"]*\b(?:eyebrow|kicker)\b[^"]*"[^>]*>[\s\S]{0,60}?<\/(?:span|p|div)>\s*(?:<[^>]+>\s*){0,1}<h[1-4]\b/gi;
+  const matches = input.html.match(pattern) || [];
+  if (matches.length >= 2) {
+    return [{
+      ruleId: 'redundant-eyebrow',
+      category: 'slop',
+      name: 'Redundant eyebrow label',
+      severity: 'advisory',
+      description: `${matches.length} sections lead with a small uppercase label directly above the heading. The heading already carries the section's identity — the label is a crutch, not information.`,
+      snippet: `${matches.length} occurrences`,
+      fix: 'Delete the label and let the heading say what the section is about.',
+    }];
+  }
+  return [];
+}
+
+function checkRandomItalics(input: CheckInput): Finding[] {
+  if (!input.html) return [];
+  // <em> around one to three ordinary words, outside a quoted/cited block —
+  // decorative emphasis with no reason to single that word out.
+  const withoutQuotes = input.html.replace(/<blockquote[\s\S]*?<\/blockquote>/gi, '');
+  const match = withoutQuotes.match(/<em>\s*([a-zA-Z][\w'-]*(?:\s+[a-zA-Z][\w'-]*){0,2})\s*<\/em>/);
+  if (match) {
+    return [{
+      ruleId: 'random-italic',
+      category: 'copy',
+      name: 'Italic emphasis on an ordinary word',
+      severity: 'advisory',
+      description: `<em>${match[1]}</em> italicizes an ordinary word with no particular reason to stand out. Emphasis should mean something, not decorate.`,
+      snippet: match[1],
+      fix: 'Remove the <em>, or make the point with word choice instead of styling.',
+    }];
+  }
+  return [];
+}
+
+function checkMonospaceCostume(input: CheckInput): Finding[] {
+  const css = input.css || '';
+  if (!css) return [];
+  const codeKeyword = /code|mono|terminal|cli|kbd|pre\b|command|shell|prompt/i;
+  const ruleRe = /([^{}]+)\{([^}]*)\}/g;
+  let m: RegExpExecArray | null;
+  let costumeCount = 0;
+  let sample = '';
+  while ((m = ruleRe.exec(css))) {
+    const [, selector, body] = m;
+    if (!/font-family\s*:[^;]*mono/i.test(body)) continue;
+    if (codeKeyword.test(selector)) continue;
+    costumeCount++;
+    if (!sample) sample = selector.trim().split(',')[0];
+  }
+  if (costumeCount >= 2) {
+    return [{
+      ruleId: 'monospace-costume',
+      category: 'slop',
+      name: 'Monospace as a "technical" costume',
+      severity: 'advisory',
+      description: `${costumeCount} selectors apply a monospace font to elements that aren't code, data, or a terminal (e.g. "${sample}"). Monospace signals "this is literal text" — using it for ordinary labels is a costume, not a reason.`,
+      snippet: sample,
+      fix: 'Reserve monospace for code, commands, and tabular data. Use the body typeface with letter-spacing and case for labels.',
+    }];
+  }
+  return [];
+}
+
+function checkNoDesignTokens(input: CheckInput): Finding[] {
+  const css = input.css || '';
+  if (!css) return [];
+  const hexCount = new Set(css.match(/#[0-9a-fA-F]{3,8}\b/g) || []).size;
+  const tokenCount = (css.match(/var\(--/g) || []).length;
+  if (hexCount >= 6 && tokenCount === 0) {
+    return [{
+      ruleId: 'no-design-tokens',
+      category: 'quality',
+      name: 'No design tokens',
+      severity: 'advisory',
+      description: `${hexCount} distinct hex colors are hardcoded directly in rules, with zero custom properties (var(--...)). Without tokens, "the brand green" is just a string repeated everywhere it's used.`,
+      fix: 'Promote the repeated colors (and spacing, radius, shadow values) to CSS custom properties on :root and reference them with var().',
+    }];
+  }
+  return [];
+}
+
+function checkHeroNoProductVisual(input: CheckInput): Finding[] {
+  if (!input.html) return [];
+  // Only meaningful on an assembled page with other sections around the hero —
+  // a single scaffolded component dropped into its own HTML file (what
+  // scout_codegen outputs one-at-a-time) has no asset to embed on its own and
+  // isn't the thing this check is for.
+  const isFullDoc = /<body[\s>]/i.test(input.html) || /<!doctype\s+html/i.test(input.html);
+  if (!isFullDoc) return [];
+  const landmarks = (input.html.match(/<(?:header|footer|section|nav)\b/gi) || []).length;
+  if (landmarks < 2) return [];
+  const bodyMatch = input.html.match(/<body[^>]*>([\s\S]*)/i);
+  const body = bodyMatch ? bodyMatch[1] : input.html;
+  const heroIdx = body.search(/class="[^"]*\bhero\b[^"]*"/i);
+  if (heroIdx < 0) return [];
+  const region = body.slice(heroIdx, heroIdx + 3000);
+  const hasVisual = /<(?:img|video|canvas|iframe)\b|class="[^"]*(?:terminal|screenshot|preview|demo)[^"]*"/i.test(region);
+  if (!hasVisual) {
+    return [{
+      ruleId: 'hero-no-product-visual',
+      category: 'quality',
+      name: 'Hero has no product visual',
+      severity: 'advisory',
+      description: 'The hero section has no image, video, screenshot, or demo — just text and buttons. Visitors have nothing to look at that proves what the product actually is.',
+      fix: 'Show the real product: a screenshot, a short demo, a live embed, or an interactive preview — not an illustration of the idea.',
+    }];
+  }
+  return [];
+}
+
+function checkGenericHeadline(input: CheckInput): Finding[] {
+  if (!input.html) return [];
+  const headings = input.html.match(/<h[12][^>]*>([\s\S]*?)<\/h[12]>/gi) || [];
+  // "N things/ways/reasons" followed by a vague pronoun resolution ("it does",
+  // "you need") is the tell — followed by a concrete noun ("ways to export")
+  // is just an accurate description and must not match.
+  const genericPattern = /\b(?:\d+|\w+)\s+(?:things?|ways?|reasons?|features?|steps?)\b.{0,20}\b(?:it does|it offers|you need|you get|that matter|worth knowing)\b/i;
+  const vaguePattern = /^(?:everything you need|all you need|the future of|what it does|built for everyone|powerful features|built to last)\b/i;
+  for (const h of headings) {
+    const text = h.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    if (genericPattern.test(text) || vaguePattern.test(text)) {
+      return [{
+        ruleId: 'generic-headline',
+        category: 'copy',
+        name: 'Generic listicle headline',
+        severity: 'advisory',
+        description: `"${text}" is a template headline shape ("N things it does", "everything you need") that says nothing specific about this product.`,
+        snippet: text,
+        fix: 'Name the actual capabilities or outcome instead of counting them.',
+      }];
+    }
+  }
+  return [];
+}
+
+function checkUnemphasizedCta(input: CheckInput): Finding[] {
+  if (!input.html) return [];
+  const buttons = input.html.match(/<(?:a|button)\b[^>]*class="[^"]*\bbtn\b[^"]*"[^>]*>/gi) || [];
+  if (buttons.length < 2) return [];
+  const variantPattern = /\bbtn--?(?:primary|cta|accent|main)\b/i;
+  const emphasized = buttons.filter(b => variantPattern.test(b));
+  if (emphasized.length === 0) {
+    return [{
+      ruleId: 'unemphasized-cta',
+      category: 'quality',
+      name: 'No emphasized primary action',
+      severity: 'advisory',
+      description: `${buttons.length} buttons share the same visual weight with no primary/accent variant among them. When every action looks equally important, none of them does.`,
+      fix: 'Give exactly one action per view a primary style (solid fill, brand color) and make the rest secondary.',
+    }];
+  }
+  return [];
+}
+
+function checkNoAccentColor(input: CheckInput): Finding[] {
+  if (!input.colors || input.colors.length < 3) return [];
+  const sats = input.colors
+    .map(c => hexToHsl(c.startsWith('#') ? c : `#${c}`))
+    .filter((h): h is { h: number; s: number; l: number } => !!h);
+  if (!sats.length) return [];
+  const hasAccent = sats.some(hsl => hsl.s > 0.25 && hsl.l > 0.15 && hsl.l < 0.9);
+  if (!hasAccent) {
+    return [{
+      ruleId: 'no-accent-color',
+      category: 'quality',
+      name: 'No accent color',
+      severity: 'advisory',
+      description: 'Every color in the palette is neutral (low saturation). Nothing reads as a deliberate brand color for links, CTAs, or active states.',
+      fix: 'Pick one saturated accent color and reserve it for actions and emphasis — everything else stays neutral.',
+    }];
+  }
+  return [];
+}
+
+function checkInconsistentIconStyle(input: CheckInput): Finding[] {
+  if (!input.html) return [];
+  const solid = (input.html.match(/<svg\b[^>]*\bfill="(?!none)[^"]*"[^>]*>/gi) || []).length;
+  const outline = (input.html.match(/<svg\b[^>]*\bfill="none"[^>]*\bstroke="[^"]*"[^>]*>/gi) || []).length;
+  if (solid >= 2 && outline >= 2) {
+    return [{
+      ruleId: 'inconsistent-icon-style',
+      category: 'quality',
+      name: 'Mixed icon styles',
+      severity: 'advisory',
+      description: `${outline} outline icons (stroke, fill:none) and ${solid} solid/filled icons appear in the same document. One icon system should commit to one convention.`,
+      fix: 'Pick one icon style — stroke or solid — and keep it consistent. A recognizable third-party brand mark is a reasonable, deliberate exception.',
+    }];
+  }
+  return [];
+}
+
+function checkHeadlineNoTextWrap(input: CheckInput): Finding[] {
+  const css = input.css || '';
+  if (!css) return [];
+  const ruleRe = /h[12](?:[^{}]*)\{([^}]*)\}/gi;
+  let m: RegExpExecArray | null;
+  let hasLargeHeading = false;
+  while ((m = ruleRe.exec(css))) {
+    const body = m[1];
+    if (/font-size\s*:\s*clamp\(/i.test(body)) { hasLargeHeading = true; continue; }
+    const sizeMatch = body.match(/font-size\s*:\s*([\d.]+)(rem|em|px)/i);
+    if (!sizeMatch) continue;
+    const value = parseFloat(sizeMatch[1]);
+    const px = sizeMatch[2].toLowerCase() === 'px' ? value : value * 16;
+    if (px >= 32) hasLargeHeading = true;
+  }
+  if (hasLargeHeading && !/text-wrap\s*:\s*(?:balance|pretty)/i.test(css)) {
+    return [{
+      ruleId: 'headline-no-text-wrap',
+      category: 'quality',
+      name: 'Display heading without text-wrap',
+      severity: 'advisory',
+      description: 'A large (32px+) heading has no text-wrap: balance or text-wrap: pretty anywhere in the stylesheet. Long headlines are left to the browser\'s greedy line breaks, which routinely strands one or two words alone on the last line.',
+      fix: 'Add text-wrap: balance to short headings, or text-wrap: pretty to longer ones.',
+    }];
+  }
+  return [];
+}
+
+function checkCounterWithoutTabularNums(input: CheckInput): Finding[] {
+  const source = (input.css || '') + (input.html || '');
+  if (!source) return [];
+  const looksLikeCounter = /textContent\s*=|innerText\s*=/.test(source) && /Math\.round|\bcountUp\b|\bcounter\b/i.test(source);
+  const classCounter = /class="[^"]*\b(?:stat|count|counter|metric)s?\b[^"]*"/i.test(source);
+  if ((looksLikeCounter || classCounter) && !/tabular-nums/i.test(source)) {
+    return [{
+      ruleId: 'counter-no-tabular-nums',
+      category: 'quality',
+      name: 'Animated or stat number without tabular-nums',
+      severity: 'advisory',
+      description: 'A counted-up or stat-style number has no font-variant-numeric: tabular-nums anywhere in the stylesheet. Proportional digits shift width as they change, so a counting animation visibly jitters.',
+      fix: 'Add font-variant-numeric: tabular-nums to the element showing the number.',
+    }];
+  }
+  return [];
+}
+
+function checkMissingLoadingState(input: CheckInput): Finding[] {
+  const source = (input.css || '') + (input.html || '');
+  if (!source) return [];
+  const hasAsync = /\bfetch\s*\(|new XMLHttpRequest|axios\.(?:get|post)/i.test(source);
+  const hasLoadingUi = /\b(?:skeleton|spinner|shimmer|placeholder|loading|aria-busy)\b/i.test(source);
+  if (hasAsync && !hasLoadingUi) {
+    return [{
+      ruleId: 'missing-loading-state',
+      category: 'quality',
+      name: 'Async operation with no loading state',
+      severity: 'advisory',
+      description: 'The page fetches data but has no skeleton, spinner, shimmer, or aria-busy state anywhere. Between the click and the response, the UI gives no sign anything is happening.',
+      fix: 'Show a skeleton, spinner, or a disabled/loading button state for the duration of the request.',
+    }];
+  }
+  return [];
+}
+
+function checkNoInteractiveFeedback(input: CheckInput): Finding[] {
+  if (!input.html || !input.css) return [];
+  const hasButtons = /<button\b|class="[^"]*\bbtn\b[^"]*"/i.test(input.html);
+  if (!hasButtons) return [];
+  const hasFeedback = /:hover|:active|:focus(?:-visible)?|transition\s*:/i.test(input.css);
+  if (!hasFeedback) {
+    return [{
+      ruleId: 'no-interactive-feedback',
+      category: 'quality',
+      name: 'No interactive feedback styling',
+      severity: 'advisory',
+      description: 'Buttons exist but the stylesheet has no :hover, :active, :focus, or transition rule anywhere. Every click lands on a surface that never visibly responds.',
+      fix: 'Add at least a hover/active state and a short transition to every clickable element.',
+    }];
+  }
+  return [];
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
 // QUALITY CHECKS
 // ══════════════════════════════════════════════════════════════════════════════
 
@@ -790,15 +1094,29 @@ export const RULES: AntiPatternRule[] = [
   { id: 'emoji-headings', category: 'slop', name: 'Emoji headings', description: 'Emoji as heading decoration', check: checkEmojiHeadings },
   { id: 'icon-tile-heading', category: 'slop', name: 'Icon tile above heading', description: 'Icon-in-tile before every section heading', check: checkIconTileHeading },
   { id: 'stagger-reveal', category: 'slop', name: 'Staggered scroll reveal', description: 'Incrementing animation-delay on scroll', check: checkStaggerReveal },
+  { id: 'filler-badge', category: 'slop', name: 'Filler badge above headline', description: 'Decorative pill restating the title above the <h1>', check: checkFillerBadge },
+  { id: 'redundant-eyebrow', category: 'slop', name: 'Redundant eyebrow label', description: 'Uppercase kicker label the heading already covers', check: checkRedundantEyebrow },
+  { id: 'monospace-costume', category: 'slop', name: 'Monospace costume', description: 'Monospace on non-code elements', check: checkMonospaceCostume },
   // Copy tells
   { id: 'ai-copy', category: 'copy', name: 'AI copy phrase', description: 'LLM filler phrases', check: checkAICopyPhrases },
   { id: 'ai-punctuation', category: 'copy', name: 'AI punctuation', description: 'Em-dash, exclamation, ellipsis density', check: checkAIPunctuation },
   { id: 'generic-testimonials', category: 'copy', name: 'Template testimonials', description: 'Generic praise phrases', check: checkGenericTestimonials },
+  { id: 'random-italic', category: 'copy', name: 'Random italic', description: 'Decorative <em> on an ordinary word', check: checkRandomItalics },
+  { id: 'generic-headline', category: 'copy', name: 'Generic headline', description: 'Template listicle headline shape', check: checkGenericHeadline },
   // Quality
   { id: 'pure-gray', category: 'quality', name: 'Pure gray', description: 'Untinted neutral gray', check: checkPureGrays },
   { id: 'pure-black', category: 'quality', name: 'Pure black', description: 'Unwarmed #000000', check: checkPureBlackWhite },
   { id: 'gray-on-color', category: 'quality', name: 'Gray on color', description: 'Untinted gray text on colored surface', check: checkGrayOnColor },
   { id: 'contrast', category: 'quality', name: 'Low contrast', description: 'WCAG AA contrast failure', check: checkContrastRatio },
+  { id: 'no-design-tokens', category: 'quality', name: 'No design tokens', description: 'Hardcoded hex colors, zero CSS custom properties', check: checkNoDesignTokens },
+  { id: 'hero-no-product-visual', category: 'quality', name: 'Hero has no product visual', description: 'Hero is text + buttons only, no image/video/demo', check: checkHeroNoProductVisual },
+  { id: 'unemphasized-cta', category: 'quality', name: 'No emphasized CTA', description: 'Multiple buttons, none marked primary', check: checkUnemphasizedCta },
+  { id: 'no-accent-color', category: 'quality', name: 'No accent color', description: 'Entire palette is neutral/desaturated', check: checkNoAccentColor },
+  { id: 'inconsistent-icon-style', category: 'quality', name: 'Inconsistent icon style', description: 'Solid and outline icons mixed in one system', check: checkInconsistentIconStyle },
+  { id: 'headline-no-text-wrap', category: 'quality', name: 'Headline without text-wrap', description: 'Large heading with no text-wrap: balance/pretty', check: checkHeadlineNoTextWrap },
+  { id: 'counter-no-tabular-nums', category: 'quality', name: 'Counter without tabular-nums', description: 'Animated/stat number missing tabular-nums', check: checkCounterWithoutTabularNums },
+  { id: 'missing-loading-state', category: 'quality', name: 'Missing loading state', description: 'Async fetch with no skeleton/spinner/busy state', check: checkMissingLoadingState },
+  { id: 'no-interactive-feedback', category: 'quality', name: 'No interactive feedback', description: 'Buttons with no hover/active/transition styling', check: checkNoInteractiveFeedback },
 ];
 
 /**

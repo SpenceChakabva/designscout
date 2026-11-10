@@ -112,8 +112,8 @@
       --radius: 12px;
       --radius-sm: 8px;
       --shadow-sm: 0 1px 2px rgba(12,26,22,.07), 0 1px 3px rgba(12,26,22,.05);
-      --shadow-md: 0 6px 16px rgba(12,26,22,.09), 0 2px 5px rgba(12,26,22,.06);
-      --shadow-lg: 0 16px 40px rgba(12,26,22,.12), 0 5px 12px rgba(12,26,22,.07);
+      --shadow-md: 0 4px 10px rgba(12,26,22,.08), 0 1px 3px rgba(12,26,22,.06);
+      --shadow-lg: 0 10px 22px rgba(12,26,22,.11), 0 3px 8px rgba(12,26,22,.06);
       --maxw: 1080px;
       --header-h: 60px;
     }
@@ -148,7 +148,7 @@
         --muted-foreground: #93b6a9;
         --border: #1f3b32;
         --input: #24443a;
-        --primary: #17976a;
+        --primary: #0d8053;
         --primary-strong: #1cac74;
         --primary-foreground: #ffffff;
         --accent: #13291f;
@@ -157,8 +157,8 @@
         --warn-surface: #2a1a1a;
         --ring: #34b07a;
         --shadow-sm: 0 1px 2px rgba(0,0,0,.3);
-        --shadow-md: 0 6px 18px rgba(0,0,0,.35);
-        --shadow-lg: 0 18px 40px rgba(0,0,0,.45);
+        --shadow-md: 0 4px 10px rgba(0,0,0,.32);
+        --shadow-lg: 0 10px 24px rgba(0,0,0,.42);
       }
     }
 
@@ -183,13 +183,9 @@
     .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 24px; }
 
     /* ── Typography ── */
-    h1, h2, h3 { line-height: 1.15; letter-spacing: -0.02em; font-weight: 600; }
+    h1, h2, h3 { line-height: 1.15; letter-spacing: -0.02em; font-weight: 600; text-wrap: balance; }
     h2 { font-size: clamp(1.7rem, 3.4vw, 2.35rem); }
     h3 { font-size: 1.06rem; }
-    .eyebrow {
-      font-family: 'JetBrains Mono', monospace; font-size: .72rem; font-weight: 500;
-      letter-spacing: .14em; text-transform: uppercase; color: var(--primary-strong);
-    }
     .lead { color: var(--muted-foreground); font-size: 1.05rem; max-width: 46ch; }
     .section-head { max-width: 52ch; margin-bottom: 44px; }
     .section-head p { color: var(--muted-foreground); margin-top: 12px; }
@@ -204,7 +200,7 @@
     }
     .btn:active { transform: translateY(1px); }
     .btn--primary { background: var(--primary); color: var(--primary-foreground); box-shadow: var(--shadow-sm); }
-    .btn--primary:hover { background: var(--primary-strong); box-shadow: var(--shadow-md); }
+    .btn--primary:hover { background: color-mix(in srgb, var(--primary) 82%, black); box-shadow: var(--shadow-md); }
     .btn--ghost { background: var(--card); color: var(--foreground); border-color: var(--border); }
     .btn--ghost:hover { background: var(--muted); }
 
@@ -214,7 +210,7 @@
       height: var(--header-h);
       background: var(--background);
       border-bottom: 1px solid transparent;
-      transition: border-color .25s ease, background .45s ease, height .3s cubic-bezier(.22,1,.36,1), box-shadow .3s ease;
+      transition: border-color .25s ease, background .45s ease, box-shadow .3s ease;
     }
     header.scrolled { border-bottom-color: var(--border); }
     header.shrink { height: 52px; box-shadow: var(--shadow-sm); }
@@ -246,30 +242,21 @@
       :root:not([data-theme="light"]) .theme-toggle .moon { display: block; }
     }
 
-    /* ── Badge ── */
-    .badge {
-      display: inline-flex; align-items: center; gap: .4rem;
-      font-family: 'JetBrains Mono', monospace; font-size: .72rem; font-weight: 500;
-      padding: .3rem .6rem; border-radius: 999px;
-      border: 1px solid var(--border); background: var(--muted); color: var(--muted-foreground);
-    }
-    .badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--primary); }
-
     /* ── Hero ── */
     .hero { padding: 84px 0 72px; }
-    .hero-grid { display: grid; grid-template-columns: 1.05fr .95fr; gap: 56px; align-items: center; }
+    .hero-grid { display: grid; grid-template-columns: .92fr 1.08fr; gap: 56px; align-items: center; }
     .hero h1 { font-size: clamp(2.5rem, 6vw, 3.75rem); font-weight: 600; margin: 22px 0 20px; }
     .hero h1 .stroke { color: var(--muted-foreground); }
     .hero .lead { font-size: 1.12rem; max-width: 42ch; }
     .hero-actions { display: flex; gap: 12px; margin-top: 30px; flex-wrap: wrap; }
     .hero-meta { display: flex; gap: 22px; margin-top: 34px; flex-wrap: wrap; }
     .hero-meta div { display: flex; flex-direction: column; gap: 2px; }
-    .hero-meta .n { font-size: 1.3rem; font-weight: 600; letter-spacing: -0.02em; }
+    .hero-meta .n { font-size: 1.3rem; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
     .hero-meta .l { font-size: .78rem; color: var(--muted-foreground); }
 
     /* ── Terminal card ── */
     .terminal {
-      background: var(--card); border: 1px solid var(--border);
+      background: var(--card);
       border-radius: var(--radius); box-shadow: var(--shadow-lg); overflow: hidden;
     }
     .terminal__bar {
@@ -302,13 +289,9 @@
       transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
     }
     .card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: color-mix(in srgb, var(--primary) 35%, var(--border)); }
-    .card__icon {
-      width: 34px; height: 34px; border-radius: var(--radius-sm);
-      display: inline-flex; align-items: center; justify-content: center;
-      background: var(--accent); color: var(--primary-strong); margin-bottom: 14px;
-    }
+    .card h3 { display: flex; align-items: center; gap: .5rem; margin-bottom: 7px; }
+    .card__icon { color: var(--primary-strong); flex: none; }
     .card__icon svg { width: 18px; height: 18px; }
-    .card h3 { margin-bottom: 7px; }
     .card p { font-size: .9rem; color: var(--muted-foreground); }
 
     /* ── Pipeline ── */
@@ -320,7 +303,7 @@
     .step::before {
       counter-increment: step; content: counter(step, decimal-leading-zero);
       font-family: 'JetBrains Mono', monospace; font-size: .74rem; font-weight: 700;
-      color: var(--primary-strong);
+      font-variant-numeric: tabular-nums; color: var(--primary-strong);
     }
     .step h3 { margin: 8px 0 6px; font-size: .98rem; }
     .step p { font-size: .85rem; color: var(--muted-foreground); }
@@ -337,10 +320,12 @@
     .showcase-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: color-mix(in srgb, var(--primary) 35%, var(--border)); }
     .showcase-card__frame { position: relative; aspect-ratio: 1522 / 784; overflow: hidden; background: var(--muted); border-bottom: 1px solid var(--border); }
     .showcase-card__frame img { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }
+    .js .showcase-card__frame img { opacity: 0; transition: opacity .5s ease; }
+    .js .showcase-card__frame img.is-loaded { opacity: 1; }
     .showcase-card__body { padding: 18px 20px 20px; }
     .showcase-card__tag {
-      display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: .68rem; font-weight: 600;
-      letter-spacing: .08em; text-transform: uppercase; color: var(--primary-strong);
+      display: inline-block; font-size: .72rem; font-weight: 700;
+      letter-spacing: .07em; text-transform: uppercase; color: var(--primary-strong);
       margin-bottom: 8px;
     }
     .showcase-card h3 { font-size: 1.02rem; margin-bottom: 6px; }
@@ -366,9 +351,9 @@
     .tool:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: color-mix(in srgb, var(--primary) 30%, var(--border)); }
     .tool__name { font-family: 'JetBrains Mono', monospace; font-size: .82rem; font-weight: 700; color: var(--primary-strong); }
     .tool__cat {
-      float: right; font-family: 'JetBrains Mono', monospace; font-size: .62rem; letter-spacing: .1em;
+      float: right; font-size: .72rem; font-weight: 600; letter-spacing: .07em;
       text-transform: uppercase; color: var(--muted-foreground);
-      border: 1px solid var(--border); border-radius: 999px; padding: .12rem .5rem;
+      border: 1px solid var(--border); border-radius: 999px; padding: .12rem .55rem;
     }
     .tool p { font-size: .84rem; color: var(--muted-foreground); margin-top: 9px; clear: both; }
     .tool.hidden { display: none; }
@@ -378,8 +363,8 @@
     .detect { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; }
     .detect h3 { display: flex; align-items: center; gap: .5rem; margin-bottom: 14px; }
     .detect h3 .tag {
-      font-family: 'JetBrains Mono', monospace; font-size: .62rem; letter-spacing: .08em;
-      text-transform: uppercase; padding: .15rem .45rem; border-radius: 4px;
+      font-size: .72rem; font-weight: 600; letter-spacing: .06em;
+      text-transform: uppercase; padding: .15rem .5rem; border-radius: 4px;
       background: var(--warn-surface); color: var(--warn);
     }
     .chips { display: flex; flex-wrap: wrap; gap: 7px; }
@@ -391,7 +376,7 @@
     /* ── Audit demo ── */
     .audit-demo { margin-top: 16px; }
     .audit-demo__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    .audit-demo .terminal { box-shadow: var(--shadow-sm); }
+    .audit-demo .terminal { border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
     .audit-demo .terminal__body { font-size: .76rem; line-height: 1.95; }
     .audit-demo .terminal__body .line { opacity: 1; transform: none; }
     .audit-demo .badge-label {
@@ -406,7 +391,7 @@
     /* ── Formats table ── */
     .formats { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
     .formats th, .formats td { text-align: left; padding: 13px 18px; font-size: .88rem; border-bottom: 1px solid var(--border); }
-    .formats th { font-family: 'JetBrains Mono', monospace; font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted-foreground); }
+    .formats th { font-size: .72rem; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--muted-foreground); }
     .formats tr:last-child td { border-bottom: none; }
     .formats td:first-child { font-family: 'JetBrains Mono', monospace; font-weight: 600; color: var(--primary-strong); width: 190px; }
     .formats td:last-child { color: var(--muted-foreground); }
@@ -414,7 +399,7 @@
     /* ── Setup ── */
     .setup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
     .setup-step { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 22px; min-width: 0; }
-    .setup-step .k { font-family: 'JetBrains Mono', monospace; font-size: .74rem; font-weight: 700; color: var(--primary-strong); }
+    .setup-step .k { font-family: 'JetBrains Mono', monospace; font-size: .74rem; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--primary-strong); }
     .setup-step h3 { margin: 6px 0 12px; font-size: 1rem; }
     .code {
       position: relative; background: var(--foreground); color: var(--background);
@@ -446,6 +431,7 @@
     .cta-box h2 { margin-bottom: 12px; }
     .cta-box p { color: var(--muted-foreground); max-width: 44ch; margin: 0 auto 26px; }
     .cta-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .cta-actions .btn--primary { padding: .85rem 1.4rem; font-size: .98rem; }
 
     /* ── Footer ── */
     footer { border-top: 1px solid var(--border); padding: 34px 0; }
@@ -540,7 +526,6 @@
   <section class="hero">
     <div class="wrap hero-grid">
       <div class="reveal">
-        <span class="badge"><span class="dot"></span> MCP server for Claude Code</span>
         <h1>Build from real design,<br><span class="stroke">not a model's guess.</span></h1>
         <p class="lead">DesignScout runs a headless browser, captures how live websites look and are built, and stores the patterns locally. Claude Code reads them, generates tokens and components, and audits the result so nothing ships looking machine made.</p>
         <div class="hero-actions">
@@ -588,50 +573,41 @@
   <section class="block tint" id="capabilities">
     <div class="wrap">
       <div class="section-head reveal">
-        <span class="eyebrow">Capabilities</span>
-        <h2>Eight things it does well</h2>
+        <h2>Capture, extract, audit, ship</h2>
         <p>Every step runs locally against a SQLite database in <code>~/.designscout</code>. No images leave your machine.</p>
       </div>
       <div class="cap-grid">
         <div class="card reveal">
-          <span class="card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 9h18M8 21h8"/></svg></span>
-          <h3>Capture</h3>
+          <h3><span class="card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 9h18M8 21h8"/></svg></span>Capture</h3>
           <p>Full-page screenshots at any viewport, or mobile, tablet, and desktop in one call. Scrolls to trigger lazy content, dismisses cookie banners, flags responsive breakage.</p>
         </div>
         <div class="card reveal">
-          <span class="card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 19V5M4 19h16M8 15l3-4 3 3 5-7"/></svg></span>
-          <h3>Extract</h3>
+          <h3><span class="card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 19V5M4 19h16M8 15l3-4 3 3 5-7"/></svg></span>Extract</h3>
           <p>Colours, type scale, fonts, icon sets, animation libraries, CSS variables, and breakpoints, pulled from the live DOM rather than guessed from a screenshot.</p>
         </div>
         <div class="card reveal">
-          <span class="card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>
-          <h3>Audit</h3>
+          <h3><span class="card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>Audit</h3>
           <p>About 27 deterministic rules catch AI design tells and copy tells: overused fonts, cream palettes, gradient text, glassmorphism, em-dash density, filler phrases. No LLM in the loop.</p>
         </div>
         <div class="card reveal">
-          <span class="card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.5 5 5.5.8-4 3.9.9 5.5L12 21l-4.9-2.8.9-5.5-4-3.9L9.5 8z"/></svg></span>
-          <h3>Generate</h3>
+          <h3><span class="card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.5 5 5.5.8-4 3.9.9 5.5L12 21l-4.9-2.8.9-5.5-4-3.9L9.5 8z"/></svg></span>Generate</h3>
           <p>Design tokens in six formats, three distinct style directions, and audit-clean React or HTML components. Greys auto-tint toward the brand hue; font stacks skip the monoculture.</p>
         </div>
         <div class="card reveal">
-          <span class="card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg></span>
-          <h3>Crawl</h3>
+          <h3><span class="card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg></span>Crawl</h3>
           <p>Walk a whole site, dedupe near-identical pages by structural fingerprint, and score cross-page consistency: font drift, palette spread, unstable nav and footer.</p>
         </div>
         <div class="card reveal">
-          <span class="card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg></span>
-          <h3>Inventory</h3>
+          <h3><span class="card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg></span>Inventory</h3>
           <p>Component inventory straight from the DOM: buttons, inputs, cards, and badges grouped by variant, with computed styles and usage counts for each.</p>
         </div>
         <div class="card reveal">
-          <span class="card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4M9 10l2 2 4-4"/></svg></span>
-          <h3>Verify</h3>
+          <h3><span class="card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4M9 10l2 2 4-4"/></svg></span>Verify</h3>
           <p>Render the code you just generated at mobile, tablet, and desktop. Reports horizontal overflow with the offending elements, sub-44px tap targets, missing viewport meta, broken images, console errors, and inline-script syntax.</p>
         </div>
         <div class="card reveal">
-          <span class="card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5zM3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg></span>
-          <h3>Ship</h3>
-          <p>Check WCAG contrast in light <em>and</em> dark, emit a guarded scroll-animation layer, resolve exact CDN versions, then inline every asset into one self-contained file that opens with no network.</p>
+          <h3><span class="card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5zM3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg></span>Ship</h3>
+          <p>Check WCAG contrast in light and dark, emit a guarded scroll-animation layer, resolve exact CDN versions, then inline every asset into one self-contained file that opens with no network.</p>
         </div>
       </div>
     </div>
@@ -641,7 +617,6 @@
   <section class="block" id="how">
     <div class="wrap">
       <div class="section-head reveal">
-        <span class="eyebrow">Pipeline</span>
         <h2>From a URL to shippable code</h2>
         <p>The server writes screenshots to disk and returns their paths. Claude Code opens the PNGs with its own vision. Token generation and auditing are plain code.</p>
       </div>
@@ -679,7 +654,6 @@
   <section class="block" id="showcase">
     <div class="wrap">
       <div class="section-head reveal">
-        <span class="eyebrow">In the wild</span>
         <h2>Built with DesignScout</h2>
         <p>Real front ends, generated from captured design systems instead of a model's defaults. The three below are one design study — five reference sites captured and distilled — run through three separate direction passes, the same shape as <code>scout_styles</code>'s Refined, Bold, and Expressive output.</p>
       </div>
@@ -728,7 +702,6 @@
   <section class="block tint" id="tools">
     <div class="wrap">
       <div class="section-head reveal">
-        <span class="eyebrow">Tools</span>
         <h2>Twenty-three MCP tools</h2>
         <p>Each one also has a matching CLI subcommand for scripting or piping context.</p>
       </div>
@@ -773,7 +746,6 @@
   <section class="block" id="detection">
     <div class="wrap">
       <div class="section-head reveal">
-        <span class="eyebrow">Anti-pattern detection</span>
         <h2>Twenty-seven rules that know what "AI-made" looks like</h2>
         <p>Point <code>scout_audit</code> at a file, raw text, or a captured site. Every rule is a deterministic check against real markup and computed styles, not a vibe check from a model — same input, same finding, every time.</p>
       </div>
@@ -852,7 +824,6 @@
   <section class="block tint">
     <div class="wrap">
       <div class="section-head reveal">
-        <span class="eyebrow">Token formats</span>
         <h2>Six ways to export</h2>
       </div>
       <div class="reveal" style="overflow-x:auto;">
@@ -875,7 +846,6 @@
   <section class="block" id="setup">
     <div class="wrap">
       <div class="section-head reveal">
-        <span class="eyebrow">Setup</span>
         <h2>Running in four steps</h2>
         <p>You need Node 20 or newer, Claude Code, and about 400 MB of disk for the bundled Chromium.</p>
       </div>
@@ -961,6 +931,13 @@ claude mcp add designscout -s user -- \
       reveals.forEach(unhide);
       $('#term .line').forEach(function (l) { l.style.opacity = '1'; l.style.transform = 'none'; });
     }
+
+    /* ══════════ SHOWCASE IMAGE LOAD-IN ══════════ */
+    $('.showcase-card__frame img').forEach(function (img) {
+      if (img.complete) { img.classList.add('is-loaded'); return; }
+      img.addEventListener('load', function () { img.classList.add('is-loaded'); });
+      img.addEventListener('error', function () { img.classList.add('is-loaded'); });
+    });
 
     /* ══════════ THEME ══════════ */
     var toggle = document.getElementById('themeToggle');
@@ -1105,9 +1082,8 @@ claude mcp add designscout -s user -- \
     $('.hero .reveal').forEach(unhide);
     var heroTl = G.timeline({ defaults: { duration: 0.8, ease: EASE } });
     heroTl
-      .from('.hero .badge', { y: 14, autoAlpha: 0, duration: 0.55 })
       .fromTo('.hero h1', { autoAlpha: 0, y: 20, clipPath: 'inset(0 100% 0 0)' },
-                          { autoAlpha: 1, y: 0, clipPath: 'inset(0 0% 0 0)', duration: 0.95 }, '-=0.25')
+                          { autoAlpha: 1, y: 0, clipPath: 'inset(0 0% 0 0)', duration: 0.95 })
       .from('.hero .lead', { y: 16, autoAlpha: 0, filter: 'blur(7px)', duration: 0.75 }, '-=0.55')
       .from('.hero-actions .btn', { y: 12, autoAlpha: 0, stagger: 0.08, duration: 0.5 }, '-=0.4')
       .from('.hero-meta div', { y: 10, autoAlpha: 0, stagger: 0.06, duration: 0.45 }, '-=0.35')

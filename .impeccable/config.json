@@ -1,0 +1,44 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "clipped-overflow-container",
+        "value": "*",
+        "files": [
+          "docs/index.html"
+        ],
+        "createdAt": "2026-11-10T08:34:48.681Z",
+        "reason": "Agent: body{overflow-x:hidden} guards against scroll-reveal/clip-path entrance animations causing a horizontal scrollbar flash; page has no tooltip/menu/popover that needs to escape it"
+      },
+      {
+        "rule": "numbered-section-labels",
+        "value": "*",
+        "files": [
+          "docs/index.html"
+        ],
+        "createdAt": "2026-11-10T08:34:51.728Z",
+        "reason": "Agent: setup-step 01-04 labels are a literal ordered CLI procedure (clone, install chromium, register, verify) where sequence is functionally required, matching craft-floor's own exception for numbering that carries real sequence information"
+      },
+      {
+        "rule": "gradient-text",
+        "value": "*",
+        "files": [
+          "src/audit/rules.ts"
+        ],
+        "createdAt": "2026-11-10T09:11:57.027Z",
+        "reason": "Agent: this file is the anti-pattern rule registry itself — its regex literals and description strings necessarily contain phrases like 'background-clip: text' and 'linear-gradient' as the text being detected, not as rendered CSS"
+      },
+      {
+        "rule": "gradient-text",
+        "value": "*",
+        "files": [
+          "src/audit/rules.test.ts"
+        ],
+        "createdAt": "2026-11-10T09:13:25.434Z",
+        "reason": "Agent: test fixture deliberately contains gradient-text CSS to verify the rule detects it"
+      }
+    ]
+  }
+}

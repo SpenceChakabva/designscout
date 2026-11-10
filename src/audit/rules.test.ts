@@ -88,6 +88,135 @@ test('auditMarkup catches genuine low contrast between real text and bg', () => 
   assert.ok(auditMarkup(html).some(f => f.ruleId === 'low-contrast' || f.ruleId === 'low-contrast-body'));
 });
 
+test('flags a filler badge above the h1', () => {
+  const html = '<section><span class="badge"><span class="dot"></span> MCP server</span><h1>Title</h1></section>';
+  assert.ok(runAudit({ html }).some(f => f.ruleId === 'filler-badge'));
+});
+
+test('flags redundant eyebrow labels above headings', () => {
+  const block = '<span class="eyebrow">Section</span><h2>Heading</h2>';
+  assert.ok(runAudit({ html: block.repeat(2) }).some(f => f.ruleId === 'redundant-eyebrow'));
+});
+
+test('does not flag a single eyebrow (needs a pattern, not one-off)', () => {
+  const html = '<span class="eyebrow">Section</span><h2>Heading</h2>';
+  assert.ok(!runAudit({ html }).some(f => f.ruleId === 'redundant-eyebrow'));
+});
+
+test('flags decorative italics on an ordinary word, not blockquotes', () => {
+  const html = '<p>Check contrast in light <em>and</em> dark.</p>';
+  assert.ok(runAudit({ html }).some(f => f.ruleId === 'random-italic'));
+  const quoted = '<blockquote>It changed <em>everything</em> for us.</blockquote>';
+  assert.ok(!runAudit({ html: quoted }).some(f => f.ruleId === 'random-italic'));
+});
+
+test('flags monospace used on non-code labels', () => {
+  const css = '.tag{font-family:"JetBrains Mono",monospace} .pill{font-family:"JetBrains Mono",monospace} .code{font-family:"JetBrains Mono",monospace}';
+  const findings = runAudit({ css });
+  assert.ok(findings.some(f => f.ruleId === 'monospace-costume'));
+});
+
+test('does not flag monospace on actual code/terminal selectors', () => {
+  const css = '.code{font-family:"JetBrains Mono",monospace} .terminal__body{font-family:"JetBrains Mono",monospace} pre{font-family:"JetBrains Mono",monospace}';
+  assert.ok(!runAudit({ css }).some(f => f.ruleId === 'monospace-costume'));
+});
+
+test('flags hardcoded hex colors with no design tokens', () => {
+  const css = '.a{color:#111111}.b{color:#222222}.c{color:#333333}.d{color:#444444}.e{color:#555555}.f{color:#666666}';
+  assert.ok(runAudit({ css }).some(f => f.ruleId === 'no-design-tokens'));
+});
+
+test('does not flag hex colors already routed through custom properties', () => {
+  const css = ':root{--a:#111111;--b:#222222;--c:#333333;--d:#444444;--e:#555555;--f:#666666}.x{color:var(--a);background:var(--b)}';
+  assert.ok(!runAudit({ css }).some(f => f.ruleId === 'no-design-tokens'));
+});
+
+test('flags a hero with no product visual on an assembled page', () => {
+  const html = '<body><header></header><section class="hero"><h1>Title</h1><p>Lead copy.</p><a class="btn">Go</a></section><footer></footer></body>';
+  assert.ok(runAudit({ html }).some(f => f.ruleId === 'hero-no-product-visual'));
+});
+
+test('does not flag a hero that shows a screenshot or terminal demo', () => {
+  const html = '<body><header></header><section class="hero"><h1>Title</h1><img src="shot.png"></section><footer></footer></body>';
+  assert.ok(!runAudit({ html }).some(f => f.ruleId === 'hero-no-product-visual'));
+});
+
+test('does not flag a single scaffolded component dropped in its own HTML file', () => {
+  const html = '<!DOCTYPE html><html><body><section class="ds-hero"><h1>Title</h1><p>Lead.</p></section></body></html>';
+  assert.ok(!runAudit({ html }).some(f => f.ruleId === 'hero-no-product-visual'));
+});
+
+test('flags a generic listicle headline', () => {
+  const html = '<h2>Eight things it does well</h2>';
+  assert.ok(runAudit({ html }).some(f => f.ruleId === 'generic-headline'));
+});
+
+test('flags multiple CTAs with no emphasized primary', () => {
+  const html = '<a class="btn">Install</a><a class="btn">Docs</a>';
+  assert.ok(runAudit({ html }).some(f => f.ruleId === 'unemphasized-cta'));
+});
+
+test('does not flag CTAs when one carries a primary variant', () => {
+  const html = '<a class="btn btn--primary">Install</a><a class="btn btn--ghost">Docs</a>';
+  assert.ok(!runAudit({ html }).some(f => f.ruleId === 'unemphasized-cta'));
+});
+
+test('flags an all-neutral palette with no accent color', () => {
+  const findings = runAudit({ colors: ['#111111', '#888888', '#eeeeee'] });
+  assert.ok(findings.some(f => f.ruleId === 'no-accent-color'));
+});
+
+test('does not flag a palette that has a real accent', () => {
+  const findings = runAudit({ colors: ['#111111', '#888888', '#0d7c5f'] });
+  assert.ok(!findings.some(f => f.ruleId === 'no-accent-color'));
+});
+
+test('flags mixed solid and outline icon styles', () => {
+  const html = `
+    <svg fill="currentColor"><path d="M1 1"/></svg>
+    <svg fill="currentColor"><path d="M2 2"/></svg>
+    <svg fill="none" stroke="currentColor"><path d="M3 3"/></svg>
+    <svg fill="none" stroke="currentColor"><path d="M4 4"/></svg>`;
+  assert.ok(runAudit({ html }).some(f => f.ruleId === 'inconsistent-icon-style'));
+});
+
+test('flags a large heading with no text-wrap', () => {
+  const css = 'h1{font-size:clamp(2.5rem,6vw,3.75rem)}';
+  assert.ok(runAudit({ css }).some(f => f.ruleId === 'headline-no-text-wrap'));
+});
+
+test('does not flag a large heading that already balances', () => {
+  const css = 'h1{font-size:3rem;text-wrap:balance}';
+  assert.ok(!runAudit({ css }).some(f => f.ruleId === 'headline-no-text-wrap'));
+});
+
+test('flags a stat counter missing tabular-nums', () => {
+  const html = '<span class="stat">23</span>';
+  assert.ok(runAudit({ html }).some(f => f.ruleId === 'counter-no-tabular-nums'));
+});
+
+test('flags an async fetch with no loading state anywhere', () => {
+  const html = '<script>fetch("/api/data").then(r => r.json())</script>';
+  assert.ok(runAudit({ html }).some(f => f.ruleId === 'missing-loading-state'));
+});
+
+test('does not flag a fetch that has a loading indicator', () => {
+  const html = '<script>fetch("/api/data")</script><div class="spinner"></div>';
+  assert.ok(!runAudit({ html }).some(f => f.ruleId === 'missing-loading-state'));
+});
+
+test('flags buttons with no hover/active/transition styling at all', () => {
+  const html = '<button>Go</button>';
+  const css = '.unrelated{color:red}';
+  assert.ok(runAudit({ html, css }).some(f => f.ruleId === 'no-interactive-feedback'));
+});
+
+test('does not flag buttons that have a transition', () => {
+  const html = '<button class="btn">Go</button>';
+  const css = '.btn{transition:opacity .2s ease}';
+  assert.ok(!runAudit({ html, css }).some(f => f.ruleId === 'no-interactive-feedback'));
+});
+
 test('every rule has a stable id and category', () => {
   const ids = new Set<string>();
   for (const r of RULES) {
