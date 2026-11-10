@@ -5,7 +5,7 @@
 <p align="center">
   <img alt="MCP server" src="https://img.shields.io/badge/MCP-server-0D7C5F?style=flat-square">
   <img alt="23 tools" src="https://img.shields.io/badge/tools-23-F5C842?style=flat-square&labelColor=0C1A16">
-  <img alt="tests passing" src="https://img.shields.io/badge/tests-89_passing-0D7C5F?style=flat-square">
+  <img alt="tests passing" src="https://img.shields.io/badge/tests-118_passing-0D7C5F?style=flat-square">
   <img alt="node >= 20" src="https://img.shields.io/badge/node-%E2%89%A5%2020-0C1A16?style=flat-square">
   <img alt="no API keys" src="https://img.shields.io/badge/API_keys-none-D93B3B?style=flat-square">
   <img alt="MIT license" src="https://img.shields.io/badge/license-MIT-1E6FD9?style=flat-square">
@@ -38,7 +38,7 @@ so that what you ship reads as designed by a person.
 |---|---|
 | **Capture** | Full-page screenshots at any viewport — or all three (mobile / tablet / desktop) in one call. Detects responsive breakage. Claude Code reads the images with its own vision. |
 | **Extract** | Colours, type scale, fonts, icon sets, animation libraries, CSS variables, breakpoints — pulled straight from the live DOM, not guessed. |
-| **Audit** | ~25 deterministic rules catch AI design tells (overused fonts, purple/cream palettes, gradient text, glassmorphism, icon-tile headings) and copy tells (em-dash density, filler phrases). No LLM. |
+| **Audit** | 35 deterministic rules catch AI design tells (overused fonts, purple/cream palettes, gradient text, glassmorphism, icon-tile headings) and copy tells (em-dash density, filler phrases). No LLM. |
 | **Generate** | Design tokens in 6 formats, three distinct style directions, audit-clean React / HTML components, and a guarded scroll-animation layer. Greys auto-tint toward the brand hue; font stacks avoid the monoculture. |
 | **Verify** | Render the code you generated at mobile / tablet / desktop and report what breaks — horizontal overflow, tap-target size, missing viewport meta, broken images, console errors, WCAG contrast in light *and* dark. |
 | **Crawl** | Walk a whole site, dedupe near-identical pages, and score cross-page consistency — font drift, palette spread, unstable nav. |
@@ -165,11 +165,11 @@ so a rebuild is all it takes.
 | `scout_search` | Query the pattern database by keyword and category. |
 | `scout_tokens` | Generate tokens: `json`, `css`, `tailwind`, `style-dictionary`, `w3c` (DTCG), `figma` (Tokens Studio). |
 | `scout_styles` | Three design directions — Refined, Bold, Expressive — each with its own token set. |
-| `scout_codegen` | Scaffold a component (`hero`, `navbar`, `card`, `footer`, `features`, `testimonials`, `cta`, `pricing`) as React or HTML from a token set. Runs the audit rules on its own output and reports the result. |
+| `scout_codegen` | Scaffold a component (`hero`, `navbar`, `card`, `footer`, `features`, `testimonials`, `cta`, `pricing`) as React or HTML from a token set. `navbar` includes a real CSS-only off-canvas mobile menu (checkbox-hack toggle, scrim, slide panel — no JS). Runs the audit rules on its own output and reports the result. |
 | `scout_checklist` | Pre-generation checklist for a captured site — turns imagery, motion, forms, theming, responsive coverage, fonts, and bundling into explicit decisions, each seeded from what the reference actually does. |
 | `scout_moodboard` | Build a neubrutalist HTML mood board from captured sites. |
 | `scout_compare` | Screenshot paths + patterns for two or more sites, side by side. |
-| `scout_motion` | Emit a guarded scroll-animation layer (CSS + JS) — reveal, parallax, line-mask, count-up, marquee, magnetic, blur-in, optional View Transitions theme swap — as dependency-free vanilla JS or GSAP 3 + ScrollTrigger (+ Lenis). Hard-bails under `prefers-reduced-motion`. |
+| `scout_motion` | Emit a guarded scroll-animation layer (CSS + JS) — reveal, parallax, line-mask, count-up, marquee, magnetic, blur-in, underline (pure-CSS hover sweep, no JS), optional View Transitions theme swap — as dependency-free vanilla JS or GSAP 3 + ScrollTrigger (+ Lenis). Hard-bails under `prefers-reduced-motion`. |
 | `scout_bundle` | Make a built HTML file self-contained and CSP/sandbox-safe: inline remote images as `data:` URIs and allowlisted CDN `<script>`/`<style>`, add missing charset/viewport meta. |
 | `scout_deps` | Resolve exact pinned versions and ready-to-paste `<script src>` URLs for CDN libraries — cdnjs, then jsDelivr. |
 | `scout_audit` | Anti-pattern detection on a file, raw text, or a captured site (real HTML + extracted styles + tokens). Now also flags a missing `<meta viewport>` / `<html lang>` on full documents. |
@@ -236,22 +236,28 @@ npx tsx src/cli.ts serve            # run the MCP server over stdio
 
 ## Anti-pattern detection
 
-`scout_audit` runs ~25 deterministic rules across three categories. Point it at a file,
+`scout_audit` runs 35 deterministic rules across three categories. Point it at a file,
 raw text, or a captured `site_id` (which audits the real HTML plus the DOM-extracted
 colours, fonts, and animation stack).
 
 **Design slop** — overused fonts, cream/beige surfaces, purple/violet palettes, Tailwind
 default colours, gradient text, glow shadows, radial halos, side-tab borders, bounce easing,
 glassmorphism, stacked `100vh` sections, uniform `rounded-xl` on everything, emoji headings,
-icon-tile-above-heading, staggered scroll reveals.
+icon-tile-above-heading, staggered scroll reveals, filler badges above the headline, redundant
+eyebrow labels, monospace used as a "technical" costume on non-code elements.
 
 **Copy tells** — em-dash overuse, exclamation density, ellipsis overuse, `Label:` header
 patterns, trailing-arrow overuse, template metrics, template testimonials, 30+ AI filler
-phrases.
+phrases, decorative italics on an ordinary word, generic listicle headlines ("N things it
+does well").
 
 **Quality** — pure greys without hue tint, pure black, grey text on coloured backgrounds,
 WCAG AA contrast failures, too many typefaces, too many pinned elements, multiple animation
-libraries.
+libraries, no design tokens (hardcoded hex with zero custom properties), a hero with no
+product visual, no emphasized primary CTA, an all-neutral palette with no accent colour,
+mixed solid/outline icon styles, display headings without `text-wrap`, animated counters
+without `tabular-nums`, async fetches with no loading state, buttons with no hover/focus
+feedback.
 
 `scout_a11y` adds a separate deterministic accessibility pass with its own 0–100 score.
 
@@ -308,7 +314,7 @@ The database migrates itself on open (tracked by `PRAGMA user_version`).
 
 ```bash
 npm run build        # tsc → dist/
-npm test             # node:test suites via tsx (43 tests)
+npm test             # node:test suites via tsx (118 tests)
 npx tsc --noEmit     # type-check only
 npm run dev          # run the MCP server from source with tsx
 ```
