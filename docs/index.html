@@ -448,6 +448,27 @@
     .reveal-in { opacity: 1 !important; transform: none !important; filter: none !important; }
     .hero h1, .section-head h2 { will-change: clip-path; }
 
+    /* ── Underline: pure CSS hover sweep, no JS, no library ── */
+    [data-underline] { position: relative; display: inline-block; }
+    [data-underline]::after {
+      content: ''; position: absolute; left: 0; bottom: -2px; width: 100%; height: 1px;
+      background: currentColor; transform: scaleX(0); transform-origin: right;
+      transition: transform .32s cubic-bezier(.22,1,.36,1); transition-delay: .12s;
+    }
+    [data-underline]:hover::after, [data-underline]:focus-visible::after {
+      transform: scaleX(1); transform-origin: left; transition-delay: 0s;
+    }
+    @media (prefers-reduced-motion: reduce) { [data-underline]::after { transition: none; } }
+
+    /* ── Hover-text: two-row swap on CTA labels, split once in JS, CSS does the rest ── */
+    [data-hover-text] { display: inline-block; overflow: hidden; vertical-align: top; line-height: 1.25; }
+    [data-hover-text] .ds-hover-stack { display: block; transition: transform .35s cubic-bezier(.22,1,.36,1); }
+    [data-hover-text] .ds-hover-row { display: block; line-height: 1.25; }
+    [data-hover-text]:hover .ds-hover-stack, .btn:focus-visible [data-hover-text] .ds-hover-stack {
+      transform: translateY(-1.25em);
+    }
+    @media (prefers-reduced-motion: reduce) { [data-hover-text] .ds-hover-stack { transition: none; } }
+
     /* ── Theme-switch: a single eased cross-fade across every surface ── */
     html.theme-switch,
     html.theme-switch *,
@@ -531,9 +552,9 @@
         <div class="hero-actions">
           <a href="#setup" class="btn btn--primary">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-            Get started
+            <span data-hover-text>Get started</span>
           </a>
-          <a href="https://github.com/SpenceChakabva/designscout" target="_blank" rel="noopener" class="btn btn--ghost">View source</a>
+          <a href="https://github.com/SpenceChakabva/designscout" target="_blank" rel="noopener" class="btn btn--ghost"><span data-underline>View source</span></a>
         </div>
         <div class="hero-meta">
           <div><span class="n">23</span><span class="l">MCP tools</span></div>
@@ -813,10 +834,10 @@
             </div>
           </div>
         </div>
-        <p class="showcase-note">Illustrative run against a generic AI-styled hero, regenerated from a captured token set. Same shape of output <code>scout_audit</code> returns on a real file — see it applied to <a href="#showcase" style="color:var(--primary-strong);font-weight:600;">the prototypes above</a>.</p>
+        <p class="showcase-note">Illustrative run against a generic AI-styled hero, regenerated from a captured token set. Same shape of output <code>scout_audit</code> returns on a real file — see it applied to <a href="#showcase" style="color:var(--primary-strong);font-weight:600;" data-underline>the prototypes above</a>.</p>
       </div>
 
-      <p class="setup-note">DesignScout uses <a href="https://github.com/pbakaus/impeccable" target="_blank" rel="noopener" style="color:var(--primary-strong);font-weight:600;">impeccable</a> for design-quality enforcement. Its own generated components and default token set pass the same audit.</p>
+      <p class="setup-note">DesignScout uses <a href="https://github.com/pbakaus/impeccable" target="_blank" rel="noopener" style="color:var(--primary-strong);font-weight:600;" data-underline>impeccable</a> for design-quality enforcement. Its own generated components and default token set pass the same audit.</p>
     </div>
   </section>
 
@@ -894,8 +915,8 @@ claude mcp add designscout -s user -- \
         <h2>Start scouting</h2>
         <p>Open source, MIT licensed, and built to keep AI output from looking like AI output.</p>
         <div class="cta-actions">
-          <a href="#setup" class="btn btn--primary">Install DesignScout</a>
-          <a href="https://github.com/SpenceChakabva/designscout" target="_blank" rel="noopener" class="btn btn--ghost">Read the docs</a>
+          <a href="#setup" class="btn btn--primary"><span data-hover-text>Install DesignScout</span></a>
+          <a href="https://github.com/SpenceChakabva/designscout" target="_blank" rel="noopener" class="btn btn--ghost"><span data-underline>Read the docs</span></a>
         </div>
       </div>
     </div>
@@ -905,9 +926,9 @@ claude mcp add designscout -s user -- \
     <div class="wrap foot">
       <a href="#top" class="brand"><span class="mark"></span> DesignScout</a>
       <div class="foot-links">
-        <a href="https://github.com/SpenceChakabva/designscout" target="_blank" rel="noopener">GitHub</a>
-        <a href="https://github.com/SpenceChakabva" target="_blank" rel="noopener">Spencer Chakabva</a>
-        <a href="https://github.com/SpenceChakabva/designscout/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>
+        <a href="https://github.com/SpenceChakabva/designscout" target="_blank" rel="noopener" data-underline>GitHub</a>
+        <a href="https://github.com/SpenceChakabva" target="_blank" rel="noopener" data-underline>Spencer Chakabva</a>
+        <a href="https://github.com/SpenceChakabva/designscout/blob/main/LICENSE" target="_blank" rel="noopener" data-underline>MIT License</a>
       </div>
     </div>
   </footer>
@@ -938,6 +959,28 @@ claude mcp add designscout -s user -- \
       img.addEventListener('load', function () { img.classList.add('is-loaded'); });
       img.addEventListener('error', function () { img.classList.add('is-loaded'); });
     });
+
+    /* ══════════ HOVER-TEXT: two-row swap, pure CSS once split — no GSAP needed ══════════ */
+    if (!reduced) {
+      $('[data-hover-text]').forEach(function (el) {
+        var text = (el.textContent || '').trim();
+        if (!text) return;
+        var sub = el.getAttribute('data-hover-text') || text;
+        el.textContent = '';
+        var stack = document.createElement('span');
+        stack.className = 'ds-hover-stack';
+        var row1 = document.createElement('span');
+        row1.className = 'ds-hover-row';
+        row1.textContent = text;
+        var row2 = document.createElement('span');
+        row2.className = 'ds-hover-row';
+        row2.textContent = sub;
+        row2.setAttribute('aria-hidden', 'true');
+        stack.appendChild(row1);
+        stack.appendChild(row2);
+        el.appendChild(stack);
+      });
+    }
 
     /* ══════════ THEME ══════════ */
     var toggle = document.getElementById('themeToggle');
